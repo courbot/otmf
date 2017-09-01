@@ -77,10 +77,11 @@ def gen_beta(vois, angle,phi_theta_0, beta_sum=1):
     
 def psi_ising(x_1,x_2,fuzzy,alpha,delta,phi_uni):
     if fuzzy == False:
+        
         #alpha = par.alpha
         #res = phi_uni*x_1 + alpha*(x_1 != x_2) - alpha*(x_1==x_2)#  np.abs(x_1-x_2)
-        res = alpha*(x_2 != x_1) - alpha*(x_2==x_1)
-
+#        res = alpha*(x_2 != x_1) - alpha*(x_2==x_1)
+        res = alpha * (1.-2.*(x_2==x_1))
 #    elif fuzzy==True:
 #        # bonne combinaison : a=3, b=1.5,c=0
 #

@@ -66,7 +66,7 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     
     if disp:
         print '  SEM init...'
-    if pargibbs.X_init is not None :
+    if hasattr(pargibbs, 'X_init') :
         parchamp = est_param_noise(pargibbs.X_init,Y,parchamp,x_range) # modif pour multiclasse fait
 
 #        V_init = gs.get_dir(pargibbs.X_init,pargibbs)
@@ -111,12 +111,30 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
             
             
         else:
+            
+            # a) Simulation given the previous parameter
+            pargibbs.parchamp = parchamp 
             pargibbs.V = np.zeros_like(X_courant)
-            parvx = gs.gen_champs_fast(pargibbs, generate_v=False, generate_x=True, use_y=True,use_pi = True)            
+            
+            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
+            pargibbs.nb_iter = 100
+            pargibbs=sot.serie_gibbs(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem),generate_v=False,generate_x=True,use_y=True,use_pi=True,tmf=False)#(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem))
+            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+            
+            X_courant, d, d, d = sot.MPM_uncert(pargibbs, tmf=False)
+            
+            #        parvx = gen_champs_fast(pargibbs)            
+            #        X_courant = parvx.X_res[:,:,-1]
+            
+            if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
+                X_courant = np.random.random(size=X_courant.shape) > 0.5
+            #            print '!'
+            
+#            parvx = gs.gen_champs_fast(pargibbs, generate_v=False, generate_x=True, use_y=True,use_pi = True)            
 #            parvx=sot.serie_gibbs(pargibbs,10,generate_v=False,generate_x=True,use_y=True,use_pi = True,tmf=False)
 
             
-            X_courant,dumb0, dumb1,dumb2 = sot.MPM_uncert(parvx,tmf=False)
+#            X_courant,dumb0, dumb1,dumb2 = sot.MPM_uncert(parvx,tmf=False)
             V_courant = np.zeros_like(X_courant)
         
         
@@ -127,10 +145,26 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         #==============================================================================
         parchamp = est_param_noise(X_courant,Y,parchamp,x_range) # modif pour multiclasse fait
 
-        parchamp.pi = est_pi(X_courant,V_courant, pargibbs)
+#        parchamp.pi = est_pi(X_courant,V_courant, pargibbs)
 #        parchamp.pi[1,:] = parchamp.pi[0,:]
         
-        parchamp.alpha = 1.#est_param_de_x(X_courant)
+#        parchamp.alpha = est_param_de_x(X_courant)
+#        parchamp.alpha_v = 1.
+        
+        if parseg.use_pi :
+            parchamp.pi = est_pi(X_courant,V_courant, pargibbs)#est_pi(X_courant, pargibbs)
+        else:
+            parchamp.pi = np.ones_like(parchamp.pi)
+            
+        if parseg.use_alpha :
+            a  = est_param_de_x(X_courant)#est_param_de_x(X_courant,pargibbs)
+            if np.isnan(a):
+                parchamp.alpha = 1.0
+            else:
+                parchamp.alpha = a#est_param_de_x(X_courant,pargibbs)
+        else:
+            parchamp.alpha = 1.0   
+        
         parchamp.alpha_v = 1.
         
         #==============================================================================
@@ -230,19 +264,6 @@ def est_param_noise(X,Y,parchamp,x_range):
             mu = np.zeros(shape=(1,W))
             mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
             
-            # a) une premiere estimation de sigma basee sur les regions ou il n'y a pas de signal
-#            sig0 = np.std(Y[X==x_range[0]].flatten())
-            
-            
-            
-#            #Imax = mu[0,:].max() # intensite max
-#            #cst_ajust = sig0/Imax * 10**(parchamp.facteur/20.) # si le facteur est un PSNR
-#            
-#            cst_ajust = 10**(parchamp.facteur/20.) * np.sqrt(mu[0,:].size) * sig0 / np.linalg.norm(mu[0,:])
-#                        
-#            # ajustement
-#            mu[0,:] *= cst_ajust
-            
             # maintenant on recalcule sigma
             mut = mu[0,:]
             Y_manip = Y - X[:,:,np.newaxis] * mut[np.newaxis,np.newaxis,:] 
@@ -278,13 +299,10 @@ def est_param_noise(X,Y,parchamp,x_range):
             if mono==False:# multi bande
     
                 mu = np.zeros(shape=(1,W))
-    #            print weights.shape
-    #            print X.shape
                 mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
 
             else:
                 mu = (X*Y[:,:,0]).sum()/X.sum()
-    #jusque là, ok
     
     # on passe a l'estimation de variance/covariance.
     #
@@ -308,51 +326,22 @@ def est_param_noise(X,Y,parchamp,x_range):
         else: # monobande
             if parchamp.multi: #multiclasse
                 sig = np.zeros(shape=(nb_classe))
-    #            Y_manip = np.copy(Y[:,:,0])
+
                 nb_classe = x_range.size
                 for id_x in range(nb_classe):
                      mask = (X == x_range[id_x])
-    #                 print mu.shape
+
                      Y_manip = Y[:,:,0] -  mu[id_x] * mask
-    #                 Y_bis = Y_manip[:,:,0]
+
                      sig[id_x] = np.std(Y_manip[mask].flatten())
             else:
                 
                 Y_manip = Y[:,:,0] - X * mu  
-    
-            #ici
+
                 sig = np.std(Y_manip.flatten())
     
 
-            
-            
 
-        
-    #==============================================================================
-    #  etape de lissage pour les sigma ?   
-    # et de verif de non NaN !
-    # inutile jusque la...
-    #==============================================================================
-#    sig = 0.05 + 0.95*sig    
-#    sig_nogood = sig<=0.01
-#    print parchamp.mu
-#    if type(parchamp.mu)==np.ndarray:
-#        parchamp.mu[np.isnan(mu)==0] = mu[np.isnan(mu)==0]
-#        parchamp.sig[np.isnan(sig)==0] = sig[np.isnan(sig)==0]
-#        
-#        parchamp.mu[np.isnan(mu)] = mu[np.isnan(mu)==0].mean()
-#        parchamp.sig[np.isnan(sig)] = sig[np.isnan(sig)==0].mean()
-#        
-#        
-#        argsort = np.argsort(parchamp.mu)[0]
-##        
-#        parchamp.sig = parchamp.sig[argsort]
-#        parchamp.mu = parchamp.mu[argsort]
-##        
-#        maj_sig_mask = ((sig_nogood==0)+(np.isnan(sig)==0))>0
-#        parchamp.sig[maj_sig_mask] = sig[maj_sig_mask]
-#        parchamp.sig[sig_nogood] = np.mean(parchamp.sig[sig_nogood==0])
-#    else:
     parchamp.mu = mu
     parchamp.sig= sig
 
@@ -450,13 +439,58 @@ def est_pi(X,V,pargibbs):
 
 #
 #  
+#def est_param_de_x(X):
+#
+##    S0 = pargibbs.S0
+##    S1 = pargibbs.S1   
+#
+#    
+#        
+#    vals_vois = it.get_vals_voisins_tout(X)   
+#    iseq = (X[:,:,np.newaxis]== vals_vois)
+#    iseq = iseq[1:-1,1:-1,:]
+#    
+#    
+#    #alpha_tous = np.zeros(9)+np.nan
+#    facteur = np.zeros(9)
+#    en = np.zeros(9)
+#            
+#    pchaps = np.zeros(9)     
+#    for a in range(9) :       
+#        pchaps[a] = (iseq.sum(axis=2)==a).mean()
+#        
+#        if (iseq.sum(axis=2)==a).sum() < 20:
+#            pchaps[a] = 0
+#        
+#        
+#        energies_sans_alpha = (1 - 2*iseq)
+#        msk_a = (iseq.sum(axis=2)==a)
+#        en[a] = (energies_sans_alpha * msk_a[:,:,np.newaxis]).sum() / msk_a.sum()
+#        
+#    ratios = pchaps[np.newaxis,:] / pchaps[:,np.newaxis]   
+#    ran = np.arange(9) 
+#    facteur = ran[np.newaxis,:] - ran[:,np.newaxis] 
+#    correc_en = en[np.newaxis,:] / en[:,np.newaxis]  
+#    
+#    logratios = np.log(ratios)
+#    
+#    a = logratios/(facteur) * correc_en
+#    alpha_tous = a[(np.isnan(a)==0)*(np.isinf(a)==0)*(a!=0)]
+#    
+#    alpha = alpha_tous.mean()
+#    return alpha    
+
+
 def est_param_de_x(X):
-
-#    S0 = pargibbs.S0
-#    S1 = pargibbs.S1   
-
+    """
+    Estimation of the :math:`\\alpha` parameter from a realization :math:`X=x`.
     
-        
+    :param ndarray X: Values taken by :math:`x`
+
+
+    :returns: **alpha** *(float)* - estimation of the :math:`\\alpha` parameter
+    """
+
     vals_vois = it.get_vals_voisins_tout(X)   
     iseq = (X[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
@@ -489,4 +523,6 @@ def est_param_de_x(X):
     alpha_tous = a[(np.isnan(a)==0)*(np.isinf(a)==0)*(a!=0)]
     
     alpha = alpha_tous.mean()
-    return alpha    
+    
+#    alpha = max(alpha,0.5)
+    return alpha  

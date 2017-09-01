@@ -610,6 +610,26 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     # Ponderation par les "fractions d'abondance" pi
     ## pour x
 
+
+
+#    if isinstance(vals,(np.ndarray)):
+#        
+#        energie_x_sans_v = psi_ising( x_range[id_x], vals,alpha)  #*(vois >=0)  
+#        
+#        
+#        pi_x_tous = np.zeros(shape=(vals.shape[0],vals.shape[1]))
+#        config_x = (vals==x_range[id_x]).sum(axis=2)
+#        for conf in range(9):
+#            pi_x_tous[config_x==conf] = pi[0,conf]
+#
+#        energie_x_sum =  np.log(pi_x_tous) - (energie_x_sans_v).sum(axis=2)
+#
+#    else:
+#        energie_x_sum = 0
+#
+#    proba_courant = np.exp( energie_x_sum + np.log(likelihood[:,:,id_x]) )
+
+
     if isinstance(vals,(np.ndarray)):
         
         

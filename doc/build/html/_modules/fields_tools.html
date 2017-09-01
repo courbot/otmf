@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fields_tools &#8212; otmf 2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">otmf 2.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for fields_tools</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Feb  1 09:23:11 2016</span>
+
+<span class="sd">:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr</span>
+<span class="sd">:date: Sep 01, 2017 (created Feb 01, 2016)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">cos</span>
+
+<div class="viewcode-block" id="phi_theta"><a class="viewcode-back" href="../fields_tools.html#fields_tools.phi_theta">[docs]</a><span class="k">def</span> <span class="nf">phi_theta</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Weighting function to account for orientation in Ising models.</span>
+<span class="sd">    </span>
+<span class="sd">    :param float a: first parameter</span>
+<span class="sd">    :param floas b: second parameter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="n">a</span><span class="o">-</span><span class="n">b</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="gen_beta"><a class="viewcode-back" href="../fields_tools.html#fields_tools.gen_beta">[docs]</a><span class="k">def</span> <span class="nf">gen_beta</span><span class="p">(</span><span class="n">vois</span><span class="p">,</span> <span class="n">angle</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Computation of the outputs of the weighting function given neighbor position</span>
+<span class="sd">    and values of V (angle).</span>
+<span class="sd">    </span>
+<span class="sd">    :param ndarray vois: stack of neighbor number</span>
+<span class="sd">    :param ndarray angle: priviledged directions / values of V</span>
+<span class="sd">    </span>
+<span class="sd">     :param ndarray beta: values generated in the lookuptable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+<span class="c1">#        The following numbering is used :</span>
+<span class="c1">#        </span>
+<span class="c1">#           --------------</span>
+<span class="c1">#        y+1 | 6 | 5 | 4 |</span>
+<span class="c1">#           --------------</span>
+<span class="c1">#          y | 7 |   | 3 |</span>
+<span class="c1">#           --------------</span>
+<span class="c1">#        y-1 | 0 | 1 | 2 |</span>
+<span class="c1">#           --------------</span>
+<span class="c1">#            x-1 | x | x+1</span>
+        
+
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">vois</span><span class="p">)</span> <span class="p">;</span> <span class="c1">#beta = beta.astype(float)</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="n">beta</span><span class="p">[(</span><span class="n">vois</span><span class="o">==</span><span class="mi">3</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">vois</span><span class="o">==</span><span class="mi">7</span><span class="p">)]</span> <span class="o">=</span> <span class="n">phi_theta</span><span class="p">(</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="n">angle</span><span class="p">)</span> 
+    <span class="n">beta</span><span class="p">[(</span><span class="n">vois</span><span class="o">==</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">vois</span><span class="o">==</span><span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">phi_theta</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mf">4.</span><span class="p">,</span><span class="n">angle</span><span class="p">)</span>
+    <span class="n">beta</span><span class="p">[(</span><span class="n">vois</span><span class="o">==</span><span class="mi">5</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">vois</span><span class="o">==</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">phi_theta</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">angle</span><span class="p">)</span>
+    <span class="n">beta</span><span class="p">[(</span><span class="n">vois</span><span class="o">==</span><span class="mi">6</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">vois</span><span class="o">==</span><span class="mi">2</span><span class="p">)]</span> <span class="o">=</span> <span class="n">phi_theta</span><span class="p">(</span><span class="n">pi</span><span class="o">/</span><span class="mf">4.</span><span class="p">,</span><span class="n">angle</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">angle</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">beta</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">vois</span><span class="p">)</span>
+       
+    <span class="c1">#beta[vois==-1] = 0.   </span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span> <span class="o">==</span><span class="mi">3</span><span class="p">:</span>
+        <span class="n">beta</span> <span class="o">/=</span> <span class="n">beta</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="c1">#beta_sum</span>
+    <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">beta</span> <span class="o">/=</span><span class="n">beta</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">beta</span></div>
+    
+ 
+<div class="viewcode-block" id="psi_ising"><a class="viewcode-back" href="../fields_tools.html#fields_tools.psi_ising">[docs]</a><span class="k">def</span> <span class="nf">psi_ising</span><span class="p">(</span><span class="n">x_1</span><span class="p">,</span><span class="n">x_2</span><span class="p">,</span><span class="n">alpha</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Ising potential function</span>
+<span class="sd">    </span>
+<span class="sd">    :param float x_1: first argument of the potential, eventually ndarray.</span>
+<span class="sd">    :param float x_2: second argument, eventually ndarray of the same size that x_1.</span>
+<span class="sd">    :param float alpha: granularity parameter</span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **res** *(ndarray)* - output of the potential, eventually ndarray.      </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">res</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span><span class="o">-</span><span class="mf">2.</span><span class="o">*</span><span class="p">(</span><span class="n">x_2</span><span class="o">==</span><span class="n">x_1</span><span class="p">))</span>
+        
+    <span class="k">return</span> <span class="n">res</span>       </div>
+    
+    
+<div class="viewcode-block" id="init_champs"><a class="viewcode-back" href="../fields_tools.html#fields_tools.init_champs">[docs]</a><span class="k">def</span> <span class="nf">init_champs</span><span class="p">(</span><span class="n">par</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Set a random intialization for the class field X.</span>
+<span class="sd">    </span>
+<span class="sd">    :param parameter par: parameter set of the Gibbs sampling</span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **X_init** *(ndarray)* Initialization for X.    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">X_init</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">x_range</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">S0</span><span class="p">,</span><span class="n">par</span><span class="o">.</span><span class="n">S1</span><span class="p">))</span>
+      
+    
+    <span class="k">return</span> <span class="n">X_init</span>  </div>
+
+<div class="viewcode-block" id="get_num_voisins"><a class="viewcode-back" href="../fields_tools.html#fields_tools.get_num_voisins">[docs]</a><span class="k">def</span> <span class="nf">get_num_voisins</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">image</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Retrieving of local pixel neighborhood numbering, accounting for borders.</span>
+<span class="sd">    </span>
+<span class="sd">        The following numbering is used :</span>
+<span class="sd">        </span>
+
+<span class="sd">        y+1 | 6 | 5 | 4 |</span>
+
+<span class="sd">          y | 7 |   | 3 |</span>
+
+<span class="sd">        y-1 | 0 | 1 | 2 |</span>
+
+<span class="sd">            x-1 | x | x+1</span>
+<span class="sd">            </span>
+<span class="sd">     **Note :** by convention, non-existing neighbor are labeled &#39;-1&#39;.</span>
+
+<span class="sd">    :param float x: x-position of pixel in image</span>
+<span class="sd">    :param float y: y-position of pixel in image</span>
+<span class="sd">    :param ndarray image: concerned image, actually used for its size only.</span>
+
+<span class="sd">    :returns: **voisins** *(ndarray)* - set of neighbor number    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">S0</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+    <span class="n">S1</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+    
+
+
+    <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span>  <span class="n">S0</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&lt;</span>  <span class="n">S1</span> <span class="ow">and</span> <span class="n">y</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">:</span>
+        <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>            
+        
+    <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>   
+        <span class="k">elif</span> <span class="n">y</span><span class="o">==</span><span class="n">S1</span><span class="p">:</span>
+            <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">x</span> <span class="o">==</span> <span class="n">S0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">voisins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">y</span> <span class="o">==</span> <span class="n">S1</span><span class="p">:</span>
+            <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">y</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+        <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">y</span> <span class="o">==</span> <span class="n">S1</span><span class="p">:</span>
+        <span class="n">voisins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">7</span><span class="p">])</span>
+    
+    
+    <span class="k">return</span> <span class="n">voisins</span></div>
+    
+<div class="viewcode-block" id="get_vals_voisins_tout"><a class="viewcode-back" href="../fields_tools.html#fields_tools.get_vals_voisins_tout">[docs]</a><span class="k">def</span> <span class="nf">get_vals_voisins_tout</span><span class="p">(</span><span class="n">image</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieving of local pixel neighborhood values, accounting for borders.</span>
+
+<span class="sd">    The following numbering is used :</span>
+<span class="sd">        </span>
+
+<span class="sd">        y+1 | 6 | 5 | 4 |</span>
+
+<span class="sd">          y | 7 |   | 3 |</span>
+
+<span class="sd">        y-1 | 0 | 1 | 2 |</span>
+
+<span class="sd">            x-1 | x | x+1</span>
+<span class="sd">     </span>
+<span class="sd">    Note that along borders, pixels values are duplicated.       </span>
+<span class="sd">            </span>
+<span class="sd">    :param ndarray image: concerned image, actually used for its size only.</span>
+
+<span class="sd">    :returns: **vals** *(ndarray)* - set of neighboring values aranges in (xdim, ydim, 9) array.  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">S0</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">S1</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span> <span class="c1"># 8-voisinage</span>
+    
+    <span class="n">im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">S1</span><span class="o">+</span><span class="mi">2</span><span class="p">))</span> <span class="c1"># image with 1-px 0-padding</span>
+    <span class="n">im</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">image</span>
+    
+    <span class="c1"># On duplique les bords :</span>
+
+    <span class="n">im</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> 
+    <span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,:]</span>
+    <span class="n">im</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span> 
+    <span class="n">im</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[:,</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        
+        
+    
+    
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">S0</span><span class="p">,</span>   <span class="mi">0</span><span class="p">:</span><span class="n">S1</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">S1</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">S1</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">S0</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">S0</span><span class="p">,</span>   <span class="mi">2</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">vals</span><span class="p">[:,:,</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">S0</span><span class="p">,</span>   <span class="mi">1</span><span class="p">:</span><span class="n">S1</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+    
+    
+    
+    <span class="k">return</span> <span class="n">vals</span>     </div>
+      
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">otmf 2.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Jean-Baptiste Courbot.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.1.
+    </div>
+  </body>
+</html>

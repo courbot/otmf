@@ -9,29 +9,28 @@ Created on Tue Nov  3 09:45:48 2015
 
 import numpy as np 
 import time
-
+import gc
 import multiprocessing as mp
 
-import parameters
-#import image_tools as it
-import gibbs_sampler as gs
+from otmf import parameters
+from otmf import gibbs_sampler as gs
+from otmf import SEM as sem
 
-import SEM as sem
-
-
-import gc
-
-import matplotlib.pyplot as plt
 
 
 
 
 def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
+    """ Generate a serie of Gibbs sampling using the same parameters.
     
-#    nb_iter = pargibbs.nb_iter  
+        This functions uses multiprocessing.
+        
+    :param misc pargibbs: parameters of the Gibbs sampling.    
+    :param int nb_rea: set how many independant samplig there will be.       
+    :returns: **pargibbs** *(parameter)* parameters containing the Gibbs samples.
     
+    """ 
 
-#    print tmf
     V_tous = np.zeros(shape=(pargibbs.S0,pargibbs.S1,nb_rea))  
     X_tous = np.zeros(shape=(pargibbs.S0,pargibbs.S1,nb_rea))  
     
@@ -59,7 +58,7 @@ def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
     
     gc.collect()
 
-# version non parrellèle pour debug
+# non-parralel version, to use for debugging
 #    for i in range(nb_rea):    
 #        parvx = gs.gen_champs_fast(pargibbs,generate_v,generate_x,use_y,normal,use_pi)    
 #        V_tous[:,:,i] = parvx.V_res[:,:,-1]
@@ -70,11 +69,6 @@ def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
     pargibbs.X_res = X_tous
     if tmf==True:
         pargibbs.V_res = V_tous
-    
-    
-    
-    
-
 
     return pargibbs
  
@@ -82,17 +76,26 @@ def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
 
 
 def seg_otmf(parseg,pargibbs,superv=False,disp=False):
-   
+    """
+    Segmentation of the image/ hyperspectral image.
+    
+    
+    :param misc parseg: parameters ruling the segmentation method
+    :param misc pargibbs: parameters of the Gibbs sampling.
+    :param bool superv: set if the segmentation is supervized or not.
+    :param bool disp: trigger the verbose mode.
+    
+    
+    :returns: **X_est** *(ndarray)* X segmentation 
+    :returns: **V_est** *(ndarray)* V segmentation 
+    :returns: **X_mpm** *(ndarray)* Sequence of X Gibbs samples used for the MPM segmentation.
+    :returns: **V_mpm** *(ndarray)* Sequence of X Gibbs samples used for the MPM segmentation.
+    :returns: **parsem** *(parameter)* Parameters estimated with the SEM method.
+    """ 
 
     nb_iter_mpm = parseg.nb_iter_mpm
     nb_rea = parseg.nb_rea
     incert=parseg.incert
-#    tmf=parseg.tmf
-    
-    
-#    pargibbs.thr_conf = 1./(pargibbs.S1*pargibbs.S0)
-#    spec_snr=parseg.spec_snr#False # pour l'instant !
-
 
     parchamp = parameters.ParamsChamps()
     v_help = True
@@ -105,14 +108,20 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
     parchamp.weights = parseg.weights
     pargibbs.multi = parchamp.multi
     
+    
+    # A. Parameter retrieving    
+    
     if superv==False:
         if disp :
             print 'SEM ...'
-        start=time.time()
+            start=time.time()
+
+        # Unsupervized parameter estimation with SEM
         parsem = sem.SEM(parseg,parchamp,pargibbs) #!!!
-        temps =  (time.time()-start)
+
         nb_iter_effectif = parsem.sig_sem.shape[0]-1
         if disp:
+            temps =  (time.time()-start)
             print '     %.0f x %.0f iterations et %.2f s - %.3f s/iter.'%(nb_iter_effectif,pargibbs.nb_iter, temps,temps/nb_iter_effectif  )
         pargibbs.parchamp = parsem
         pargibbs.parchamp.mu = pargibbs.parchamp.mu.T
@@ -121,17 +130,13 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
         parsem = parseg.real_par
         pargibbs.parchamp = parsem
         pargibbs.parchamp.mu = pargibbs.parchamp.mu.T
-    # 1b) SEM retrieving
-    
 
-    
-    
-    #%%
+
+    # B. Segmentation 
     if parseg.mpm:
-            # 2) MPM
-        #    print pargibbs.mu.shape
-            nb_rea_mpm = nb_iter_mpm
-            pargibbs.nb_iter = nb_rea_mpm
+            # B 1)  if the estimator is the MPM
+            
+            pargibbs.nb_iter = nb_iter_mpm
         
             if disp:
                 print 'Serie Gibbs...'
@@ -147,27 +152,15 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
             
             temps =  (time.time()-start) 
             if disp:
-                print 'Serie simu : %.0f iterations et %.2f s - %.3f s/iter.'%(nb_rea_mpm, temps,temps/nb_rea_mpm  )    
-            if incert==False:  
-                if parseg.tmf==True:
-                    X_mpm_est,V_mpm_est,X_mpm,V_mpm = MPM(pargibbs)
-                else:
-#                    print 'attention ! souci de code dans SEG_OTMF ligne 180 env.'
-                    X_mpm_est = (pargibbs.X_res.mean(axis=2)>0.25).astype(float) # c'est quoi ce 0.25 ??
-                    V_mpm_est = np.zeros_like(X_mpm_est)
-                    
-                    X_mpm, V_mpm = pargibbs.X_res,pargibbs.V_res
-        
-            else:
-                X_mpm_est,V_mpm_est,X_mpm,V_mpm = MPM_uncert(pargibbs,parseg.tmf)
+                print 'Serie simu : %.0f iterations et %.2f s - %.3f s/iter.'%(nb_iter_mpm, temps,temps/nb_iter_mpm  )    
+
+            X_mpm_est,V_mpm_est,X_mpm,V_mpm = MPM_uncert(pargibbs,parseg.tmf)
                 
             X_est, V_est = X_mpm_est, V_mpm_est
                 
     else:
-        # MAP approché par ICM
-#        pargibbs.autoconv = False
-#        pargibbs.nb_iter = 500
-#        pargibbs.thr_conf = 1./(pargibbs.S1*pargibbs.S0)
+        # B 2) if the estimator is the MAP, we approach it by ICM
+
         if parseg.tmf==True:
             pargibbs = gs.gen_champs_fast(pargibbs,generate_v=True,generate_x=True,use_y=True,normal=False,use_pi=True,icm=True)
         else:
@@ -186,49 +179,20 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
     return X_est, V_est, X_mpm,V_mpm, parsem
 
 
-
-
-    
-def MPM(pargibbs):
-    """Parralel MPM algo"""
-    print 'attention: fonction ancienne (MPM) a eviter...'
-    #1) built numerous simumations
-   
-    X_mpm, V_mpm = pargibbs.X_res, pargibbs.V_res
-    
-    v_range, x_range = pargibbs.v_range, pargibbs.x_range
-    
-    # 2)  Estimate frequencies
-    freqs = np.zeros(shape=(pargibbs.S0,pargibbs.S1,x_range.size*v_range.size))
-    freqs_sep = np.zeros(shape=(pargibbs.S0,pargibbs.S1,pargibbs.x_range.size,pargibbs.v_range.size))
-    for id_x in range(x_range.size) :
-        for v in range(v_range.size):
-            freqs[:,:,id_x*v_range.size+v] = ((X_mpm==x_range[id_x])*(V_mpm==v_range[v])).sum(axis=2)
-            freqs_sep[:,:,id_x,v] = freqs[:,:,id_x*v_range.size+v]  
-            
-#    for id_x in range(x_range.size) :
-#        for v in range(v_range.size):
-#            freqs_sep[:,:,id_x,v] = freqs[:,:,id_x*v_range.size+v]     
-    
-    
-    # 3) get the most frequent mode
-    mode_x = np.argmax(freqs_sep.sum(axis=3),axis=2)
-    X_mpm_est = x_range[mode_x]
-    
-    mode_v = np.argmax(freqs_sep.sum(axis=2),axis=2)
-    V_mpm_est = v_range[mode_v]
-
-
-    
-    return X_mpm_est,V_mpm_est,X_mpm,V_mpm    
-    
-
-    
 def MPM_uncert(pargibbs,tmf):
-    """Parralel MPM algo"""
-    #1) built numerous simumations
- 
+    """MPM segmentation method. Used in parrallel processing here.
     
+    :param parameter pargibbs: parameters of the Gibbs sampling.    
+    :param bool tmf: set if we are in the Triplet Markov Field [True] of Hidden
+                    Markov Field [False].
+
+    :returns: **X_mpm_est** *(ndarray)* MPM estimation of X
+    :returns: **V_mpm_est** *(ndarray)* MPM estimation of V
+    :returns: **Ux_map** *(ndarray)*  Uncertainty map, supplementing the X segmentation.
+    :returns: **Uv_map** *(ndarray)*  Uncertainty map, supplementing the V segmentation.
+    
+    """
+    #1) built numerous simulations
     X_mpm = pargibbs.X_res
     x_range=pargibbs.x_range
     
@@ -299,10 +263,6 @@ def MPM_uncert(pargibbs,tmf):
     else:
         Ux_map = np.amin(freqs_diff,axis=2)  
         
-        #Ux_map_noz = freqs_mpm_x-freqs_marg_x[:,:,0]
-        #Ux_map[X_mpm_est!=0] = Ux_map_noz[X_mpm_est!=0]
-#    Ux_map *=2 # c'est comme si on avait 2 classes !
-    
 
     if tmf == True:
         freqs_marg_v = freqs_sep.sum(axis=2)
@@ -317,21 +277,7 @@ def MPM_uncert(pargibbs,tmf):
         
     else:
         Uv_map = np.zeros_like(Ux_map)
-        
-    # now constructing map of differences between probabilities
-#    if x_range.size==2:    
-#        Ux_map = np.amax(freqs_mpm_x[:,:,np.newaxis]-freqs_marg_x,axis=2)
-#    elif x_range.size>2:# il faudra preciser ceci pour le vrai multi classe    
-#        Ux_map = np.amax(freqs_mpm_x[:,:,np.newaxis]-freqs_marg_x,axis=2)
-#        Ux_map_noz = freqs_mpm_x-freqs_marg_x[:,:,0]
-#        Ux_map[X_mpm_est!=0] = Ux_map_noz[X_mpm_est!=0]
-#        
-#        
 
-    
-    
-
-    
     return X_mpm_est,V_mpm_est,Ux_map,Uv_map
     
     

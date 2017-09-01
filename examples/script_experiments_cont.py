@@ -20,12 +20,12 @@ from PIL import Image
 #from scipy.ndimage import imread
 #import matplotlib.mlab as mlab
 #import numpy.ma as ma
-import parameters
+from otmf import parameters
 #import image_tools as it
-import gibbs_sampler as gs
-import fields_tools as ft
-import seg_OTMF as sot
-import SEM as sem
+from otmf import gibbs_sampler as gs
+from otmf import fields_tools as ft
+from otmf import seg_OTMF as sot
+from otmf import SEM as sem
 
 from scipy.ndimage import zoom
 from scipy.ndimage.filters import gaussian_filter 
@@ -224,16 +224,16 @@ def gen_exp(experiment,x_range,S0,S1, W, m,sig,rho_1,rho_2):
         print('------- (V fixe, X CM)')
 #        dat = np.load('./data/exp_pamiB.npz')
 #        X=dat['X']
-#        V=dat['V']
-        dat = np.load('../../Donnees/Otmf/exp_pamiA.npz')
+#        V=dat['V']../../../Donnees/Otmf
+        dat = np.load('../../../Donnees/Otmf/exp_pamiA.npz')
         X=dat['X'] > 0
 #        V=dat['V']
         V = np.pi/4 * np.ones(shape=(128,128))
         V[64:,:] = 3*np.pi/4
         V[:,64:] = (V[:,64:] + np.pi/2)%np.pi
         
-#        X = X[:80,:80]
-#        V = V[:80,:80]        
+        X = X[:80,:80]
+        V = V[:80,:80]        
         
         Y = np.zeros(shape=(S0,S1,1))
         Y[:,:,0] = X + np.random.normal(loc=0.,scale=sig[0],size=(S0,S1))
@@ -521,10 +521,10 @@ experiment = '2'
 #    S0 = 80
 #    S1=  80
     
-S0 = S1 = 128
+#S0 = S1 = 128
 #S1 =    
 #
-#S0,S1 = 80,80
+S0,S1 = 80,80
     ###################
 #%%
 #v_range = np.array([np.pi/4.,3*np.pi/4.])#-np.pi/6
@@ -569,11 +569,11 @@ W=1
 pargibbs.W = W
 #pargibbs.autoconv=False
 
-SNR = 10
+SNR = 0
 mu = gen_mu(pargibbs.W)
-#sig = np.linalg.norm(mu)/np.sqrt(pargibbs.W)* 10**(-SNR/20.)
+sig = np.array([1.0,1.0])*np.linalg.norm(mu)/np.sqrt(pargibbs.W)* 10**(-SNR/20.)
 
-sig = 1.0*np.array([1.0,1.0])#,0.2])
+#sig = 1.0*np.array([1.0,1.0])#,0.2])
 
 m = 0
 
@@ -629,6 +629,11 @@ parseg.multi = True # le multiclasse discret
 parseg.weights=np.ones(shape=(S0,S1))
 
 parseg.mpm = True
+
+parseg.nb_iter_serie_sem = 13
+parseg.use_pi = True
+parseg.use_alpha = True
+
 #
 #==============================================================================
 # Segmentation HMF
@@ -644,7 +649,7 @@ start = time.time()
 Y_courant = np.copy(Y)
 
 pargibbs.Y = Y_courant
-#pargibbs.X_init = X
+#pargibbs.X_init = None
 
 X_mpm_hmf,V_mpm_hmf,Ux_hmf,Uv_hmf, parsem_hmf = sot.seg_otmf(parseg,pargibbs)
 
@@ -862,22 +867,22 @@ Ex_tmf = (X_tmf != X).mean()
 
 
 
-RMSE_hmf = np.sqrt( np.mean( (X_hmf-X)**2 ) )
-#RMSE_hmf = RMSE_hmf*(RMSE_hmf < 0.5) + (1-RMSE_hmf)*(RMSE_hmf > 0.5)
-
-RMSE_tmf = np.sqrt( np.mean( (X_tmf-X)**2 ) )
-#RMSE_tmf = RMSE_tmf*(RMSE_tmf < 0.5) + (1-RMSE_tmf)*(RMSE_tmf > 0.5)
-
-moy_ux_hmf = np.mean(Ux_hmf[Ux_hmf<=1])
-moy_ux_tmf = np.mean(Ux_map[Ux_map<=1])
-
-std_ux_hmf = np.std(Ux_hmf[Ux_hmf<=1])
-std_ux_tmf = np.std(Ux_map[Ux_map<=1])
-
+#RMSE_hmf = np.sqrt( np.mean( (X_hmf-X)**2 ) )
+##RMSE_hmf = RMSE_hmf*(RMSE_hmf < 0.5) + (1-RMSE_hmf)*(RMSE_hmf > 0.5)
+#
+#RMSE_tmf = np.sqrt( np.mean( (X_tmf-X)**2 ) )
+##RMSE_tmf = RMSE_tmf*(RMSE_tmf < 0.5) + (1-RMSE_tmf)*(RMSE_tmf > 0.5)
+#
+#moy_ux_hmf = np.mean(Ux_hmf[Ux_hmf<=1])
+#moy_ux_tmf = np.mean(Ux_map[Ux_map<=1])
+#
+#std_ux_hmf = np.std(Ux_hmf[Ux_hmf<=1])
+#std_ux_tmf = np.std(Ux_map[Ux_map<=1])
+#%%
 print 'Taux erreur HMF : %.7f, taux erreur TMF : %.7f'%(Ex_hmf*100,Ex_tmf*100)
-print 'RMSE HMF :        %.7f, RMSE TMF :        %.7f'%(RMSE_hmf,RMSE_tmf)
-print 'moy(ux) HMF :     %.7f, moy(ux) TMF :     %.7f'%(moy_ux_hmf , moy_ux_tmf)
-print 'std(ux) HMF :     %.7f, std(ux) TMF :     %.7f'%(std_ux_hmf , std_ux_tmf)
+#print 'RMSE HMF :        %.7f, RMSE TMF :        %.7f'%(RMSE_hmf,RMSE_tmf)
+#print 'moy(ux) HMF :     %.7f, moy(ux) TMF :     %.7f'%(moy_ux_hmf , moy_ux_tmf)
+#print 'std(ux) HMF :     %.7f, std(ux) TMF :     %.7f'%(std_ux_hmf , std_ux_tmf)
 
 
 #%%

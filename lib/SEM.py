@@ -99,21 +99,36 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
 #            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
 #            pargibbs.nb_iter = 500         
             
-            parvx = gs.gen_champs_fast(pargibbs, generate_v=True, generate_x=True, use_y=True,use_pi = True)  
-#            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
-        
-#            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
-#            pargibbs.nb_iter = 50
-#            parvx=sot.serie_gibbs(pargibbs,nb_rea=11,generate_v=True,generate_x=True,use_y=True,use_pi = True,tmf=True)#int(parseg.nb_iter_serie_sem))
-#            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+#            parvx = gs.gen_champs_fast(pargibbs, generate_v=True, generate_x=True, use_y=True,use_pi = True)  
+##            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+#        
+##            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
+##            pargibbs.nb_iter = 50
+##            parvx=sot.serie_gibbs(pargibbs,nb_rea=11,generate_v=True,generate_x=True,use_y=True,use_pi = True,tmf=True)#int(parseg.nb_iter_serie_sem))
+##            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+#            
+#            X_courant,V_courant, dumb1,dumb2 = sot.MPM_uncert(parvx,parseg.tmf)
+#            
+#            
             
-            X_courant,V_courant, dumb1,dumb2 = sot.MPM_uncert(parvx,parseg.tmf)
+            pargibbs.V = np.zeros_like(X_courant)
             
+            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
+            pargibbs.nb_iter = 100
+            pargibbs=sot.serie_gibbs(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem),generate_v=True,generate_x=True,use_y=True,use_pi=True,tmf=True)#(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem))
+            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
             
+            X_courant, V_courant, d, d = sot.MPM_uncert(pargibbs, tmf=False)
+            
+            #        parvx = gen_champs_fast(pargibbs)            
+            #        X_courant = parvx.X_res[:,:,-1]
+            
+            if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
+                X_courant = np.random.random(size=X_courant.shape) > 0.5
         else:
             
             # a) Simulation given the previous parameter
-            pargibbs.parchamp = parchamp 
+           
             pargibbs.V = np.zeros_like(X_courant)
             
             nb_iter_to_keep = np.copy(pargibbs.nb_iter)

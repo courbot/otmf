@@ -1,28 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 20 11:29:31 2016
+This module contains all the functions related to parameter estimation.
 
-@author: courbot
+:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr
+:date: Sep 01, 2017 (created Apr 20, 2016)
 """
 import numpy as np 
-
 import image_tools as it
 
-
-#import parameters
-#import image_tools as it
-import gibbs_sampler as gs
 import fields_tools as ft
 import est_param_gen as epg
 import seg_OTMF as sot
 
 
-#import numpy.ma as ma
-import matplotlib.pyplot as plt
-
-
 def SEM(parseg,parchamp,pargibbs,disp=False):
+    """ Stochastic Expectation-Maximization algorithm.
     
+    This iterative method allows, at each iteration, a parameter re-estimation 
+    directly from complete data thanks to realization of the missing data, 
+    simulated using parameters estimated at the previous step.
+    
+    See the original works from Celeux and Diebolt.
+    
+
+    :param parameters parseg: parameters ruling the segmentation method
+    :param parameters parchamp: parameters of the model (priors, noise parameters)
+    :param parameters pargibbs: parameters of the Gibbs sampling.
+    :param bool disp: set the verbose mode [True]
+
+    :returns: **parchamp** *(parameter)* - set of estimated parameters
+    """
     Y = pargibbs.Y
     W = pargibbs.W
     if parseg.multi:
@@ -38,20 +45,15 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         mono = True
     else:
         mono=False
-#    multi = parseg.multi
     x_range=pargibbs.x_range
 
     #==============================================================================
-    #   Initialisations des valeurs
+    #   Values initialization
     #==============================================================================
-        #ici    
-#    if parseg.multi:
     sig_sem = np.zeros(shape=(nb_iter_sem,nb_classe))
     alpha_sem = np.zeros(shape=(nb_iter_sem))
     alpha_v_sem = np.zeros(shape=(nb_iter_sem))
-#    else:
-#        sig_sem = np.zeros(shape=(nb_iter_sem))
-        
+
     mu_sem = np.zeros(shape=(nb_iter_sem,W,nb_classe)) ;    
     rho1_sem, rho2_sem = np.zeros(shape=(nb_iter_sem)), np.zeros(shape=(nb_iter_sem))
     pi_sem =  np.zeros(shape=(nb_iter_sem,2,9)) # deux champs, 9 types de config
@@ -69,16 +71,13 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     if hasattr(pargibbs, 'X_init') :
         parchamp = est_param_noise(pargibbs.X_init,Y,parchamp,x_range) # modif pour multiclasse fait
 
-#        V_init = gs.get_dir(pargibbs.X_init,pargibbs)
-#        parchamp.pi = est_pi(pargibbs.X_init,V_init, pargibbs)
         parchamp.pi = np.zeros(shape=(2,9))
         parchamp.pi[0,:] = np.exp(np.arange(9.)) / np.exp(np.arange(9.)).sum()
         parchamp.pi[1,:] = np.exp(np.arange(9.)) / np.exp(np.arange(9.)).sum()
         
         parchamp.alpha = 1.#est_param_de_x(X_courant)
         parchamp.alpha_v = 1.
-        
-#        print parchamp.mu.shape
+
     else:
         
         parchamp,X_courant,V_courant = epg.init_params(pargibbs,parchamp)
@@ -90,26 +89,8 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         i = iter_sem
 
         pargibbs.parchamp = parchamp
-#        print parchamp.mu.T.shape
 
-        # pourquoi pas faire du parrallele ici ?
-#        print parseg.tmf
         if parseg.tmf==True:
-#            parvx=sot.serie_gibbs(pargibbs,10,generate_v=True,generate_x=True,use_y=True,use_pi = True,tmf=True)
-#            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
-#            pargibbs.nb_iter = 500         
-            
-#            parvx = gs.gen_champs_fast(pargibbs, generate_v=True, generate_x=True, use_y=True,use_pi = True)  
-##            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
-#        
-##            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
-##            pargibbs.nb_iter = 50
-##            parvx=sot.serie_gibbs(pargibbs,nb_rea=11,generate_v=True,generate_x=True,use_y=True,use_pi = True,tmf=True)#int(parseg.nb_iter_serie_sem))
-##            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
-#            
-#            X_courant,V_courant, dumb1,dumb2 = sot.MPM_uncert(parvx,parseg.tmf)
-#            
-#            
             
             pargibbs.V = np.zeros_like(X_courant)
             
@@ -119,9 +100,6 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
             pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
             
             X_courant, V_courant, d, d = sot.MPM_uncert(pargibbs, tmf=False)
-            
-            #        parvx = gen_champs_fast(pargibbs)            
-            #        X_courant = parvx.X_res[:,:,-1]
             
             if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
                 X_courant = np.random.random(size=X_courant.shape) > 0.5
@@ -143,28 +121,14 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
             
             if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
                 X_courant = np.random.random(size=X_courant.shape) > 0.5
-            #            print '!'
-            
-#            parvx = gs.gen_champs_fast(pargibbs, generate_v=False, generate_x=True, use_y=True,use_pi = True)            
-#            parvx=sot.serie_gibbs(pargibbs,10,generate_v=False,generate_x=True,use_y=True,use_pi = True,tmf=False)
 
-            
-#            X_courant,dumb0, dumb1,dumb2 = sot.MPM_uncert(parvx,tmf=False)
             V_courant = np.zeros_like(X_courant)
-        
-        
-        
-        
+
         #==============================================================================
         #         # Estimation des parametres a partir de donnees completes
         #==============================================================================
         parchamp = est_param_noise(X_courant,Y,parchamp,x_range) # modif pour multiclasse fait
 
-#        parchamp.pi = est_pi(X_courant,V_courant, pargibbs)
-#        parchamp.pi[1,:] = parchamp.pi[0,:]
-        
-#        parchamp.alpha = est_param_de_x(X_courant)
-#        parchamp.alpha_v = 1.
         
         if parseg.use_pi :
             parchamp.pi = est_pi(X_courant,V_courant, pargibbs)#est_pi(X_courant, pargibbs)
@@ -248,9 +212,18 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     
 def est_param_noise(X,Y,parchamp,x_range):
     """ 
-    Estimation des parametres a partir de donnees complètes.
-    A synthétiser.
-    Semble bien codée (fonctionne en 1 classe vs bruit)
+    Noise parameter estimation from complete data.
+    
+    The mean and variance estimators are based on standard pseudo 
+    maximum-likelihood estimators.
+    
+
+    :param ndarray X: "hidden" classification
+    :param ndarray Y: Hyperspectral observation, arranged in x, y, lambda.
+    :param misc parchamp: parameters of the model (priors, noise parameters)
+    :param ndarray x_range: possibles values for x
+
+    :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
     W = Y.shape[2]
     weights = parchamp.weights
@@ -273,13 +246,14 @@ def est_param_noise(X,Y,parchamp,x_range):
 #     Le cas particulier de l'astro
 #==============================================================================
     
-    if parchamp.multi==False and  mono==False:
-        
+    if parchamp.multi==False and  mono==False: # 2 classes hyperspectral
+            # OK
+    
             # moyenne spectrale
             mu = np.zeros(shape=(1,W))
             mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
             
-            # maintenant on recalcule sigma
+            # maintenant on calcule sigma
             mut = mu[0,:]
             Y_manip = Y - X[:,:,np.newaxis] * mut[np.newaxis,np.newaxis,:] 
             liste_vec = np.reshape(Y_manip,(Y.shape[0]*Y.shape[1],W))
@@ -288,79 +262,45 @@ def est_param_noise(X,Y,parchamp,x_range):
             sig = np.sqrt(Sigma[np.eye(W)==1].mean())
             rho_1= Sigma[ (np.eye(W,k=-1)+np.eye(W,k=1))==1].mean()
             rho_2= Sigma[ (np.eye(W,k=-2)+np.eye(W,k=2))==1].mean()
-            
-    else:         
+ 
+        
+    elif parchamp.multi==True and mono==False: # multiple classes hyperspectral
+        # NEEDS UPDATE FOR STD
+        nb_classe = x_range.size
+        
+        # compute the mean mu
+        mu = np.zeros(shape=(W,nb_classe)) # attention forme differente ici que plus bas
+        for id_x in range(nb_classe):
+             mask = (X == x_range[id_x])
+             mu[:,id_x] = (mask[:,:,np.newaxis]*Y*weights[:,:,np.newaxis]).sum(axis=(0,1))/(mask*weights).sum()
     
-        # ça marche tant qu'on est en binaire bruit ou en continu bruit.
-        # changer en multi-classe
-        if parchamp.multi: #multi classe
-            nb_classe = x_range.size
-            
-            if mono==False: # multi bande ( a refaire)
-                mu = np.zeros(shape=(W,nb_classe)) # attention forme differente ici que plus bas
-                for id_x in range(nb_classe):
-                     mask = (X == x_range[id_x])
-                     mu[:,id_x] = (mask[:,:,np.newaxis]*Y*weights[:,:,np.newaxis]).sum(axis=(0,1))/(mask*weights).sum()
+    elif parchamp.multi==True and mono==True:   # mono bande multi classe   
     
-            else: # mono bande multi classe 
-                mu = np.zeros(shape=(nb_classe,1))
-                for id_x in range(nb_classe):
-                     mask = (X == x_range[id_x])
-                     Y_manip = Y[:,:,0]
-                     mu[id_x] = Y_manip[mask].mean()
-                     # ajouter la possibilite d'avoir zero instance
-    
-        else: # une classe contre du bruit
-            if mono==False:# multi bande
-    
-                mu = np.zeros(shape=(1,W))
-                mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
-
-            else:
-                mu = (X*Y[:,:,0]).sum()/X.sum()
-    
-    # on passe a l'estimation de variance/covariance.
-    #
-    # nb. Je pense que l'on peut mutualiser ces deux calculs, ça fera un code plus clair
-            
-        if mono==False: # multibande
-            # d'abord on construit un Y qui ne contient "que du bruit"
-            if parchamp.multi==False:
-                nb_classe = x_range.size
-                Y_manip = np.copy(Y)
-                for id_x in range(nb_classe):
-                     mask = (X == x_range[id_x])
-                     Y_manip -= mu[np.newaxis,np.newaxis,:,id_x] * mask
-            else:
-                print mu.shape
-                mut = mu[:,0]
-                Y_manip = Y - X[:,:,np.newaxis] * mut[np.newaxis,np.newaxis,:] 
-    
-            liste_vec = np.reshape(Y_manip,(Y.shape[0]*Y.shape[1],W))
-            Sigma = np.cov(liste_vec,rowvar=False, aweights=weights_1d)
-        else: # monobande
-            if parchamp.multi: #multiclasse
-                sig = np.zeros(shape=(nb_classe))
-
-                nb_classe = x_range.size
-                for id_x in range(nb_classe):
-                     mask = (X == x_range[id_x])
-
-                     Y_manip = Y[:,:,0] -  mu[id_x] * mask
-
-                     sig[id_x] = np.std(Y_manip[mask].flatten())
-            else:
-                
-                Y_manip = Y[:,:,0] - X * mu  
-
-                sig = np.std(Y_manip.flatten())
-    
-
+        nb_classe = x_range.size
+         
+        # compute the mean mu
+        mu = np.zeros(shape=(nb_classe,1))
+        for id_x in range(nb_classe):
+             mask = (X == x_range[id_x])
+             Y_manip = Y[:,:,0]
+             mu[id_x] = Y_manip[mask].mean()
+             # ajouter la possibilite d'avoir zero instance
+        
+        # compute the STD sig
+        sig = np.zeros(shape=(nb_classe))
+        
+        nb_classe = x_range.size
+        for id_x in range(nb_classe):
+             mask = (X == x_range[id_x])
+        
+             Y_manip = Y[:,:,0] -  mu[id_x] * mask
+        
+             sig[id_x] = np.std(Y_manip[mask].flatten())
+                 
+    # Retrieving
 
     parchamp.mu = mu
-    parchamp.sig= sig
-
-     
+    parchamp.sig= sig     
     
     if mono==False:
         parchamp.rho_1 = rho_1
@@ -370,11 +310,14 @@ def est_param_noise(X,Y,parchamp,x_range):
     return parchamp   
     
 def est_pi(X,V,pargibbs):
-    """ Estimation du parametre pi de regularité spatiale dans les champs.
-        On suppose :
-            - une valeur par configuration et par ensemble X et V
-            - pas de difference selon les classes.
+    """ 
+    Estimation of the prior parameter pi.
     
+    :param ndarray X: "hidden" classification
+    :param ndarray V: "hidden" orientations
+    :param misc pargibbs: parameters of the Gibbs sampling.
+
+    :returns: **pi_est** *(ndarray)* - Estimated values of pi.
     """
     S0 = pargibbs.S0
     S1 = pargibbs.S1  
@@ -400,7 +343,6 @@ def est_pi(X,V,pargibbs):
             
         else:
             pi_est[1,a] = 0
-#        pi_est[1,a] = (iseq.sum(axis=2)==a).mean()
     
    
     # Pour X maintenant :
@@ -451,49 +393,6 @@ def est_pi(X,V,pargibbs):
     
     return pi_est
   
-
-#
-#  
-#def est_param_de_x(X):
-#
-##    S0 = pargibbs.S0
-##    S1 = pargibbs.S1   
-#
-#    
-#        
-#    vals_vois = it.get_vals_voisins_tout(X)   
-#    iseq = (X[:,:,np.newaxis]== vals_vois)
-#    iseq = iseq[1:-1,1:-1,:]
-#    
-#    
-#    #alpha_tous = np.zeros(9)+np.nan
-#    facteur = np.zeros(9)
-#    en = np.zeros(9)
-#            
-#    pchaps = np.zeros(9)     
-#    for a in range(9) :       
-#        pchaps[a] = (iseq.sum(axis=2)==a).mean()
-#        
-#        if (iseq.sum(axis=2)==a).sum() < 20:
-#            pchaps[a] = 0
-#        
-#        
-#        energies_sans_alpha = (1 - 2*iseq)
-#        msk_a = (iseq.sum(axis=2)==a)
-#        en[a] = (energies_sans_alpha * msk_a[:,:,np.newaxis]).sum() / msk_a.sum()
-#        
-#    ratios = pchaps[np.newaxis,:] / pchaps[:,np.newaxis]   
-#    ran = np.arange(9) 
-#    facteur = ran[np.newaxis,:] - ran[:,np.newaxis] 
-#    correc_en = en[np.newaxis,:] / en[:,np.newaxis]  
-#    
-#    logratios = np.log(ratios)
-#    
-#    a = logratios/(facteur) * correc_en
-#    alpha_tous = a[(np.isnan(a)==0)*(np.isinf(a)==0)*(a!=0)]
-#    
-#    alpha = alpha_tous.mean()
-#    return alpha    
 
 
 def est_param_de_x(X):

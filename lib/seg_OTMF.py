@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov  3 09:45:48 2015
 
-@author: courbot
+This module contains the image segmentation functions.
+
+:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr
+:date: Sep 01, 2017 (created Nov 03, 2015)
 """
 
 
@@ -15,9 +17,6 @@ import multiprocessing as mp
 from otmf import parameters
 from otmf import gibbs_sampler as gs
 from otmf import SEM as sem
-
-
-
 
 
 def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):

@@ -7,54 +7,15 @@ Created on Mon Feb  1 14:59:34 2016
 import numpy as np
 import scipy.stats as st
 
-import image_tools as it
-import fields_tools as ft
+#import image_tools as it
+from otmf import fields_tools as ft
 import gc
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #import matplotlib.pyplot as plt
 
 from scipy import interpolate
 from scipy.ndimage.filters import gaussian_filter 
     
-def init_champs(par):
-    
-    S0 = par.S0
-    S1 = par.S1
-
-    if par.init_method == 'astro':
-        centre1 = np.array([S0/2,S1/2])
-        r1 = 5
-        y,x = np.ogrid[0:S0,0:S1]
-        
-        cercle1 = 1-( (x-centre1[0])**2+(y-centre1[1])**2 ).astype(float)/r1**2 
-        dist_centre = np.sqrt((x-centre1[0])**2+(y-centre1[1])**2 )
-
-
-    if par.fuzzy == False:
-        X_init = np.random.choice(par.x_range,size=(par.S0,par.S1)) 
-        
-        if par.init_method=='astro':
-            X_init[cercle1>0] = 1.# += 0.5* (cercle1>0)
-            X_init[dist_centre > dist_centre[int(S0/2),0]]  = 0
-        
-    elif par.fuzzy == True:
-        
-        ran_fuzz = np.arange(0,par.nb_fuzzy+1)/par.nb_fuzzy
-        if par.init_method=='astro':
-                        
-            X_init = np.random.choice(ran_fuzz, size=(par.S0,par.S1)) - .25/(par.nb_fuzzy+1) 
-                
-            X_init += 0.5* (cercle1>0)
-            X_init[dist_centre > 0.9*dist_centre[int(S0/2),0]]  -= 0.5
-                    
-            X_init[X_init>1] = 1
-            X_init[X_init<0] = 0 
-        else:
-            X_init = np.random.choice(ran_fuzz, size=(par.S0,par.S1)) #- .25/(par.nb_fuzzy+1) 
-
-
-    
-    return X_init
 
 def cast_angles(V,v_range):
     
@@ -249,7 +210,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
         x_range=par.x_range
         num_x = x_range.size
         if hasattr(par,'X_init')==0:
-            X_init = init_champs(par)   
+            X_init = ft.init_champs(par)   
         else:
             X_init = par.X_init
             
@@ -326,12 +287,12 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
     # pour le cas où on ne genere pas V
     Vois = par.Vois
     Beta = np.ones_like(Vois)
-    beta_sum =2*np.abs(np.cos(v_range[v_range!=0])).sum()
+
     if generate_v == False:
         for i in xrange(S0):
             for j in xrange(S1):
                 if np.isnan(V[i,j])==0:
-                     Beta[i,j,:] =  ft.gen_beta(Vois[i,j],V[i,j],phi_theta_0,beta_sum) # il faudra en faire un qui gere les images
+                     Beta[i,j,:] =  ft.gen_beta(Vois[i,j],V[i,j]) # il faudra en faire un qui gere les images
 
     for k in xrange(par.nb_iter):
         # random permutations of the quadrant order :
@@ -430,7 +391,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                 # enumerating different cases
                 for id_v in range(num_v):
 
-                    Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v_range[id_v],phi_theta_0,beta_sum)
+                    Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v_range[id_v])
 
                     if use_pi==False:
                         probas[:,:,id_v] = calc_proba_xyv(0,v_range[id_v], likelihood_y_tr, 0,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, alpha,alpha_v,beta,delta,phi_uni,vois_tr) 
@@ -481,7 +442,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                     for id_v in range(num_v):
                         v = v_range[id_v]
                         
-                        Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v,phi_theta_0,beta_sum)
+                        Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v)
                         
                         if use_pi==False:
                             probas[:,:,id_x*num_v+id_v] = calc_proba_xyv(x_range[id_x],v_range[id_v], likelihood_y_tr, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, alpha, alpha_v,beta,delta,phi_uni,vois_tr) 
@@ -630,7 +591,7 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     ## pour v
     if isinstance(vals_v,(np.ndarray)):
         
-        energie_v =  ft.psi_ising( v, vals_v,fuzzy,1.)                          # ATTENTION ICI !!!
+        energie_v =  ft.psi_ising( v, vals_v,1.)                          # ATTENTION ICI !!!
         
         pi_v_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_v = (v==vals_v).sum(axis=2)

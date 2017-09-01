@@ -6,11 +6,11 @@ This module contains all the functions related to parameter estimation.
 :date: Sep 01, 2017 (created Apr 20, 2016)
 """
 import numpy as np 
-import image_tools as it
+#import image_tools as it
 
-import fields_tools as ft
-import est_param_gen as epg
-import seg_OTMF as sot
+from otmf import fields_tools as ft
+from otmf import est_param_gen as epg
+from otmf import seg_OTMF as sot
 
 
 def SEM(parseg,parchamp,pargibbs,disp=False):
@@ -323,7 +323,7 @@ def est_pi(X,V,pargibbs):
     S1 = pargibbs.S1  
     
     # Pour V déjà :
-    vals_vois = it.get_vals_voisins_tout(V)   
+    vals_vois = ft.get_vals_voisins_tout(V)   
     iseq = (V[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
     
@@ -353,7 +353,7 @@ def est_pi(X,V,pargibbs):
 
     # A changer pour le multi-classe !!!
        
-    vals_vois = it.get_vals_voisins_tout(X_nn)   
+    vals_vois = ft.get_vals_voisins_tout(X_nn)   
     iseq = (X_nn[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
 
@@ -361,7 +361,7 @@ def est_pi(X,V,pargibbs):
     phi_theta = np.ones_like(pargibbs.Vois)    
     for i in xrange(S0):    
         for j in xrange(S1):
-            phi_theta[i,j,:] =  ft.gen_beta(pargibbs.Vois[i,j,:],V[i,j],pargibbs.phi_theta_0)   
+            phi_theta[i,j,:] =  ft.gen_beta(pargibbs.Vois[i,j,:],V[i,j])   
             
     phi_theta = phi_theta[1:-1,1:-1,:]
     
@@ -405,7 +405,7 @@ def est_param_de_x(X):
     :returns: **alpha** *(float)* - estimation of the :math:`\\alpha` parameter
     """
 
-    vals_vois = it.get_vals_voisins_tout(X)   
+    vals_vois = ft.get_vals_voisins_tout(X)   
     iseq = (X[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
     

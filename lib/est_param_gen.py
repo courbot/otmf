@@ -6,17 +6,16 @@ Created on Wed Apr 20 11:38:58 2016
 """
 
 import numpy as np 
-
 import scipy.cluster.vq as cvq
-
-
-import parameters
-#import image_tools as it
-import gibbs_sampler as gs
-import scipy.ndimage.morphology as morph
-import SEM as sem
 from scipy.ndimage.filters import gaussian_filter 
-import matplotlib.pyplot as plt
+import scipy.ndimage.morphology as morph
+#import parameters
+#import image_tools as it
+
+from otmf import gibbs_sampler as gs
+from otmf import SEM as sem
+
+#import matplotlib.pyplot as plt
 
 def get_parcov(Sigma):
     

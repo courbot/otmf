@@ -8,14 +8,25 @@ Created on Mon Feb  1 09:23:11 2016
 import numpy as np
 from numpy import cos
 
-def phi_theta(a_1,a_2):
+def phi_theta(a,b):
+    """ 
+    Weighting function to account for orientation in Ising models.
     
-    return np.abs(cos(a_1-a_2))
+    :param float a: first parameter
+    :param floas b: second parameter
+    """
     
-def gen_beta(vois, angle,phi_theta_0, beta_sum=1):
-    """ vois : stack of neighbor number
-        angle : priviledged directions (image)
-        gen_beta(Vois,v_range[id_v],phi_theta_0)
+    return np.abs(cos(a-b))
+    
+def gen_beta(vois, angle):
+    """ 
+    Computation of the outputs of the weighting function given neighbor position
+    and values of V (angle).
+    
+    :param ndarray vois: stack of neighbor number
+    :param ndarray angle: priviledged directions / values of V
+    
+     :param ndarray beta: values generated in the lookuptable.
         """
         
 #        The following numbering is used :
@@ -32,24 +43,12 @@ def gen_beta(vois, angle,phi_theta_0, beta_sum=1):
 
     beta = np.ones_like(vois) ; #beta = beta.astype(float)
     pi = np.pi
-#   
+
     beta[(vois==3)+(vois==7)] = phi_theta(pi/2,angle) 
     beta[(vois==4)+(vois==0)] = phi_theta(3*pi/4.,angle)
     beta[(vois==5)+(vois==1)] = phi_theta(0,angle)
     beta[(vois==6)+(vois==2)] = phi_theta(pi/4.,angle)
-    
-    
-#    beta[(vois==3)+(vois==7)] = phi_theta(0,angle) 
-#    beta[(vois==4)+(vois==0)] = phi_theta(pi/4.,angle)
-#    beta[(vois==5)+(vois==1)] = phi_theta(pi/2.,angle)
-#    beta[(vois==6)+(vois==2)] = phi_theta(3.*pi/4.,angle)
 
-    
-
-#    if angle!=0:
-#        beta = phi_theta_0 + (1-phi_theta_0)*beta
-#    else:
-#        beta=np.ones_like(vois)
 
     if angle==0:
         beta=np.ones_like(vois)
@@ -59,39 +58,10 @@ def gen_beta(vois, angle,phi_theta_0, beta_sum=1):
         beta /= beta.sum(axis=2)[:,:,np.newaxis]#beta_sum
     elif np.ndim(beta) == 1:
         beta /=beta.sum()
-        
-#    beta -=0.5
-#    beta /= beta.sum(axis=2)[:,:,np.newaxis]#beta_sum
-#    beta/=(2+np.cos(angle))
-    
-#    if angle ==0:
-#        beta /=1.5
-    #beta /= 2.#((beta**2).sum())**(0.5)
-#    beta = phi_theta_0*np.ones_like(beta) + beta*(1-phi_theta_0)
+
     return beta
     
-    
-#def psi_ising(x_1,x_2,fuzzy,alpha,delta,phi_uni):
-#    if fuzzy == False:
-#        
-#        #alpha = par.alpha
-#        #res = phi_uni*x_1 + alpha*(x_1 != x_2) - alpha*(x_1==x_2)#  np.abs(x_1-x_2)
-##        res = alpha*(x_2 != x_1) - alpha*(x_2==x_1)
-#        res = alpha * (1.-2.*(x_2==x_1))
-##    elif fuzzy==True:
-##        # bonne combinaison : a=3, b=1.5,c=0
-##
-##        ha_eq =   ((x_1==0)*(x_2==0) + (x_1==1)*(x_2==1)) > 0
-##        ha_diff = ((x_1==1)*(x_2==0) + (x_1==0)*(x_2==1)) > 0 #stands for "or"
-##          
-##        fuzz_1 = (x_1 != 0)  * (x_1 !=1)        
-##        fuzz_2 = (x_2 != 0)  * (x_2 !=1)
-##        fuzz = (fuzz_1 + fuzz_2) > 0 
-##        
-##        res = phi_uni*x_1 -alpha * ha_eq + alpha* ha_diff + (-beta* (1-2*abs(x_2-x_1)) + delta) * fuzz
-#
-#        
-#    return res    
+ 
 def psi_ising(x_1,x_2,alpha):
     """ Ising potential function
     
@@ -119,10 +89,6 @@ def init_champs(par):
       
     
     return X_init  
-
-
-
-
 
 def get_num_voisins(x,y,image):
     """ Retrieving of local pixel neighborhood numbering, accounting for borders.

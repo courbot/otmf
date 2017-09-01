@@ -352,18 +352,18 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
             
             # retrieving appropriate X field (current, or fixed)
             if generate_x == True:
-                vals_tout_x = it.get_vals_voisins_tout(X_courant)
+                vals_tout_x = ft.get_vals_voisins_tout(X_courant)
                 
             else:
-                vals_tout_x = it.get_vals_voisins_tout(X)
+                vals_tout_x = ft.get_vals_voisins_tout(X)
             
             vals_tr_x = vals_tout_x[dq[0,q]::pas_q,dq[1,q]::pas_q,:] # this cannot be out of the 'for q' loop !
                 
             # retrieving appropriate V field (current, or fixed)
             if generate_v == True:
-                vals_tout_v = it.get_vals_voisins_tout(V_courant)
+                vals_tout_v = ft.get_vals_voisins_tout(V_courant)
             else:
-                vals_tout_v = it.get_vals_voisins_tout(V)
+                vals_tout_v = ft.get_vals_voisins_tout(V)
             vals_tr_v = vals_tout_v[dq[0,q]::pas_q,dq[1,q]::pas_q,:] # this cannot be out of the 'for q' loop !
             
             if use_y == True:
@@ -588,12 +588,9 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
 def calc_proba_xyv(x_range,id_x,v,likelihood,vals,vals_v, Beta, fuzzy,nb_fuzzy, alpha,alpha_v,beta,delta,phi_uni,vois):
     
     
-    energie_x = (Beta * ft.psi_ising( x_range[id_x], vals,fuzzy,alpha,beta,delta,phi_uni)    )#*(vois >=0) 
+    energie_x = Beta * ft.psi_ising( x_range[id_x], vals,alpha)
    
-    energie_v = ( ft.psi_ising( v, vals_v,fuzzy,alpha_v,beta,delta,phi_uni)    )*np.ones_like(vois)#(vois >=0) 
-    # /!\ si on ajoute un facteur Beta
-    
-    #print energie_v
+    energie_v =ft.psi_ising( v, vals_v,alpha_v)
     
     energie_y = np.log(likelihood[:,:,id_x]) 
     
@@ -612,31 +609,11 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
 
 
 
-#    if isinstance(vals,(np.ndarray)):
-#        
-#        energie_x_sans_v = psi_ising( x_range[id_x], vals,alpha)  #*(vois >=0)  
-#        
-#        
-#        pi_x_tous = np.zeros(shape=(vals.shape[0],vals.shape[1]))
-#        config_x = (vals==x_range[id_x]).sum(axis=2)
-#        for conf in range(9):
-#            pi_x_tous[config_x==conf] = pi[0,conf]
-#
-#        energie_x_sum =  np.log(pi_x_tous) - (energie_x_sans_v).sum(axis=2)
-#
-#    else:
-#        energie_x_sum = 0
-#
-#    proba_courant = np.exp( energie_x_sum + np.log(likelihood[:,:,id_x]) )
-
-
     if isinstance(vals,(np.ndarray)):
         
         
-        energie_x_sans_v =  ft.psi_ising( x_range[id_x], vals,fuzzy,1.,delta,phi_uni)
-#        energie_x_sans_v =  ft.psi_ising( x_range[id_x], vals,fuzzy,1,delta,phi_uni)
+        energie_x_sans_v =  ft.psi_ising( x_range[id_x], vals,1.)                   # ATTENTION ICI !!!
         
-
         pi_x_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_x = (vals==x_range[id_x]).sum(axis=2)
         for conf in range(9):
@@ -653,7 +630,7 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     ## pour v
     if isinstance(vals_v,(np.ndarray)):
         
-        energie_v =  ft.psi_ising( v, vals_v,fuzzy,1.,delta,phi_uni)
+        energie_v =  ft.psi_ising( v, vals_v,fuzzy,1.)                          # ATTENTION ICI !!!
         
         pi_v_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_v = (v==vals_v).sum(axis=2)

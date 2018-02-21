@@ -1,21 +1,16 @@
-.. otmf documentation master file, created by
-   sphinx-quickstart on Fri Sep  1 16:42:36 2017.
+.. OTMF documentation master file, created by
+   sphinx-quickstart on Wed Feb 21 09:25:45 2018.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to otmf's documentation!
+Welcome to OTMF's documentation!
 ================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. toctree::
-   segmentation
-   parameter_estimation
-   gibbs_sampling
-   fields_tools
-   parameters	
+
 
 Indices and tables
 ==================

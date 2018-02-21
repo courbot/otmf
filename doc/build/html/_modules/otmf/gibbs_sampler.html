@@ -1,0 +1,701 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>otmf.gibbs_sampler &#8212; OTMF 1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for otmf.gibbs_sampler</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Mon Feb  1 14:59:34 2016</span>
+
+<span class="sd">@author: courbot</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">st</span>
+<span class="kn">from</span> <span class="nn">otmf</span> <span class="k">import</span> <span class="n">fields_tools</span> <span class="k">as</span> <span class="n">ft</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">import</span> <span class="n">gaussian_filter</span> 
+    
+
+<div class="viewcode-block" id="cast_angles"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.cast_angles">[docs]</a><span class="k">def</span> <span class="nf">cast_angles</span><span class="p">(</span><span class="n">V</span><span class="p">,</span><span class="n">v_range</span><span class="p">):</span>
+    
+    <span class="n">V_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+    
+    
+    <span class="n">decal</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">v_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+    
+    <span class="c1"># il nous faut construire des intervalles sur 0,pi</span>
+    <span class="c1">#vmin = 0</span>
+    <span class="c1">#vmax = v_range[0]/2</span>
+    <span class="c1">#V_new[(vc&gt;=vmin)*(vc&lt;vmax)] = v_range[-1]</span>
+    <span class="n">V_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">v_range</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        
+    
+        <span class="n">vmin</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">decal</span><span class="p">)</span>
+        <span class="n">vmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">decal</span><span class="p">)</span>
+        <span class="n">Vcb</span> <span class="o">=</span> <span class="n">V</span><span class="o">%</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        
+<span class="c1">#        print vmin, vmax</span>
+        <span class="k">if</span> <span class="n">vmin</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">:</span>
+            <span class="c1"># intervalle supplementaire du cote de pi</span>
+            <span class="n">vmin_bis</span> <span class="o">=</span> <span class="n">vmin</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="n">vmax_bis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            
+            <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
+            <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin_bis</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax_bis</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
+<span class="c1">#            print vmin_bis, vmax_bis</span>
+        <span class="k">elif</span> <span class="n">vmax</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
+            <span class="n">vmin_bis</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">vmax_bis</span> <span class="o">=</span> <span class="n">vmax</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            
+            <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
+            <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin_bis</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax_bis</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
+<span class="c1">#            print vmin_bis, vmax_bis</span>
+            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>      
+    
+<span class="c1">#    decal = v_range[0]/2.</span>
+<span class="c1">#    </span>
+<span class="c1">#    V_new = ((V+decal)-(V+decal)%(v_range[0]))%np.pi</span>
+    
+    
+<span class="c1">#    v_range_new = v_range[v_range!=0]</span>
+<span class="c1">#    for i in range(V.shape[0]):</span>
+<span class="c1">#        for j in range(V.shape[1]):</span>
+<span class="c1">#            if np.isnan(V[i,j])==0:</span>
+<span class="c1">#                ecart = np.abs(V[i,j] - v_range)%np.pi</span>
+<span class="c1">#                ind_min = np.argmin(ecart)</span>
+<span class="c1">#        </span>
+<span class="c1">#                V_new[i,j] =v_range[ind_min]   </span>
+    <span class="k">return</span> <span class="n">V_new</span></div>
+
+<div class="viewcode-block" id="get_dir"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.get_dir">[docs]</a><span class="k">def</span> <span class="nf">get_dir</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
+    
+    <span class="n">S0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S0</span>
+    <span class="n">S1</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S1</span>
+    <span class="n">v_range</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">v_range</span>
+
+    <span class="k">if</span> <span class="n">par</span><span class="o">.</span><span class="n">multi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+<span class="c1">#        X_fil = gaussian_filter(X.astype(float), sigma=(0.5,0.5))</span>
+        <span class="n">X_fil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+<span class="c1">#        if par.Y.shape[2]==1:</span>
+<span class="c1">#            X_fil = np.copy(par.Y[:,:,0])</span>
+<span class="c1">#        else:</span>
+        <span class="n">X_fil</span> <span class="o">=</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="c1">#        X_fil = np.copy(X).astype(float)</span>
+        
+    <span class="n">dx</span><span class="p">,</span><span class="n">dy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">X_fil</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">))</span>
+    <span class="n">an</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">dy</span><span class="p">,</span><span class="n">dx</span><span class="p">)</span>
+        
+    
+    <span class="n">an</span> <span class="o">=</span> <span class="p">(</span><span class="n">an</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">%</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(((</span><span class="n">dx</span><span class="o">==</span><span class="mi">0</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">dy</span><span class="o">==</span><span class="mi">0</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+    <span class="n">ux</span><span class="p">,</span> <span class="n">uy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">S0</span><span class="p">,</span><span class="mi">0</span><span class="p">:</span><span class="n">S1</span><span class="p">]</span>
+    <span class="n">ux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">ux</span><span class="p">,(</span><span class="mi">1</span><span class="p">,</span><span class="n">S1</span><span class="p">))</span>
+    <span class="n">uy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">uy</span><span class="p">,(</span><span class="n">S0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c1">#</span>
+    
+    
+    <span class="n">image</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">an</span><span class="p">)</span>
+    <span class="n">image</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    
+    <span class="c1">########## Actual interpolation</span>
+    <span class="n">valid_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">valid_mask</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">valid_mask</span><span class="p">]</span>
+    
+    <span class="n">it</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">LinearNDInterpolator</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+    
+    <span class="n">an_interp</span> <span class="o">=</span> <span class="n">it</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    
+    <span class="c1"># Interpolation fails outside of a convex hull. Misisng values are randomly filled.</span>
+    <span class="n">ani0</span> <span class="o">=</span><span class="n">an_interp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">an_interp</span><span class="p">)]</span>
+    <span class="n">an_interp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">an_interp</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">v_range</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">ani0</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    
+    <span class="c1">############## Recasting into the known range</span>
+    <span class="n">an_interp_fil</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">an_interp</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+    
+    
+    <span class="n">an_interp2</span> <span class="o">=</span> <span class="n">cast_angles</span><span class="p">(</span><span class="n">an_interp_fil</span><span class="p">,</span> <span class="n">v_range</span><span class="p">)</span>
+    <span class="c1">#</span>
+    <span class="k">return</span> <span class="n">an_interp2</span>   </div>
+
+
+<div class="viewcode-block" id="calc_likelihood"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_likelihood">[docs]</a><span class="k">def</span> <span class="nf">calc_likelihood</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
+    
+        <span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">W</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">num_x</span> <span class="o">=</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">num_x</span><span class="p">))</span>       
+        <span class="n">parc</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parchamp</span>
+        <span class="k">if</span> <span class="n">multi</span><span class="p">:</span> <span class="c1"># multiclasse</span>
+            <span class="k">if</span> <span class="n">W</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span><span class="c1">#monoband</span>
+                <span class="c1">#ici</span>
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
+
+                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">scale</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">id_x</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                
+                <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_2</span>       
+                
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">mu</span><span class="p">[:,</span><span class="n">id_x</span><span class="p">],</span><span class="n">cov</span><span class="o">=</span><span class="n">Sigma</span><span class="p">)</span>        
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># classes vs bruit</span>
+            <span class="k">if</span> <span class="n">W</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
+                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">*</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_2</span> 
+           
+                <span class="k">if</span> <span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">parc</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>            
+                
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">*</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span><span class="n">cov</span><span class="o">=</span><span class="n">Sigma</span><span class="p">)</span>   
+                    
+
+            <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">weights</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+            
+            
+            <span class="n">likelihood_sum</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">likelihood_y</span> <span class="o">/=</span> <span class="n">likelihood_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+            
+        <span class="k">return</span> <span class="n">likelihood_y</span></div>
+
+
+ 
+<div class="viewcode-block" id="gen_champs_fast"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.gen_champs_fast">[docs]</a><span class="k">def</span> <span class="nf">gen_champs_fast</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">generate_v</span><span class="p">,</span> <span class="n">generate_x</span><span class="p">,</span> <span class="n">use_y</span><span class="p">,</span><span class="n">normal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">use_pi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">icm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Generation d&#39;un champs de Gibbs a partir d&#39;une initialisation</span>
+<span class="sd">    angle en radians    </span>
+<span class="sd">    Situations prises en compte :</span>
+<span class="sd">    X,V |Y</span>
+<span class="sd">    X|Y V fixe</span>
+<span class="sd">    V|Y X fixe</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    icm specifie si l&#39;on est en déterministe</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+   
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span> <span class="c1"># this is important if used in parrallel !!</span>
+    
+    <span class="n">S0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S0</span>
+    <span class="n">S1</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S1</span>    
+    <span class="n">fuzzy</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">fuzzy</span>
+    <span class="n">nb_fuzzy</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">nb_fuzzy</span>
+<span class="c1">#    ran_fuzz = np.arange(0,nb_fuzzy+1)/nb_fuzzy</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha</span> 
+    <span class="n">alpha_v</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha_v</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">beta</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">delta</span>
+    <span class="n">phi_uni</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">phi_uni</span>
+    <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">phi_theta_0</span> 
+    <span class="n">multi</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">multi</span>
+    <span class="n">parc</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parchamp</span>
+    
+    <span class="c1"># about convergence</span>
+    <span class="n">std_window_width</span> <span class="o">=</span> <span class="mi">30</span>  
+    
+    
+    <span class="c1">####################################</span>
+    <span class="c1"># Label field X :</span>
+    <span class="k">if</span> <span class="n">generate_x</span> <span class="o">==</span> <span class="kc">True</span> <span class="p">:</span>
+        <span class="n">v_range</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">v_range</span>
+        <span class="c1"># Label field X</span>
+        <span class="n">x_range</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">x_range</span>
+        <span class="n">num_x</span> <span class="o">=</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;X_init&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">X_init</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">init_champs</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>   
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X_init</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">X_init</span>
+            
+        <span class="n">X_courant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X_init</span><span class="p">)</span>
+        <span class="n">X_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">par</span><span class="o">.</span><span class="n">nb_iter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        
+        <span class="n">X_res</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_init</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;X&#39;</span><span class="p">):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">X</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">))</span>
+
+    <span class="c1">####################################</span>
+    <span class="c1"># Auxiliarry field V :      </span>
+    <span class="k">if</span> <span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">v_range</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">v_range</span>
+        <span class="n">num_v</span> <span class="o">=</span> <span class="n">v_range</span><span class="o">.</span><span class="n">size</span>  
+        
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;V_init&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="c1"># Attention ici !!!</span>
+            
+            <span class="k">if</span> <span class="n">generate_x</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span> <span class="c1">#U|X        </span>
+                <span class="n">V_init</span> <span class="o">=</span> <span class="n">get_dir</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">V_init</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">v_range</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">))</span>
+            
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">V_init</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">V_init</span>
+            
+        <span class="n">V_courant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">V_init</span><span class="p">)</span>
+        <span class="n">V_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">par</span><span class="o">.</span><span class="n">nb_iter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">V_res</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">V_init</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">V</span>
+
+    <span class="c1">################################### </span>
+    <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+
+        <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">calc_likelihood</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
+ 
+
+    
+    <span class="c1"># To speed up the gibbs sampler</span>
+    <span class="c1"># defining quadrants</span>
+    <span class="k">if</span> <span class="n">normal</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="c1"># parcours sur un graphe &quot;colore&quot;</span>
+    
+<span class="c1">#        dq =  np.array([[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3],</span>
+<span class="c1">#                        [0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3]  ])</span>
+        <span class="n">dq</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+                        
+        <span class="n">pas_q</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">ran</span> <span class="o">=</span> <span class="n">xrange</span><span class="p">(</span><span class="n">pas_q</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># parcours en ligne standard</span>
+        <span class="n">dq</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">S0</span><span class="o">*</span><span class="n">S1</span><span class="p">))</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">S0</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">S1</span><span class="p">):</span>
+                <span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span>
+                <span class="n">q</span><span class="o">+=</span><span class="mi">1</span>
+                
+        <span class="n">pas_q</span> <span class="o">=</span> <span class="n">S0</span>
+                
+        <span class="n">ran</span> <span class="o">=</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S0</span><span class="o">*</span><span class="n">S1</span><span class="p">)</span>
+
+        
+    <span class="c1"># Retrieving locals neighborhoods:</span>
+    <span class="c1"># pour le cas où on ne genere pas V</span>
+    <span class="n">Vois</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">Vois</span>
+    <span class="n">Beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">Vois</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">generate_v</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S0</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                     <span class="n">Beta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="c1"># il faudra en faire un qui gere les images</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">nb_iter</span><span class="p">):</span>
+        <span class="c1"># random permutations of the quadrant order :</span>
+        <span class="n">i</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dq</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">dq</span> <span class="o">=</span> <span class="n">dq</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">generate_v</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">k</span> <span class="o">&lt;=</span><span class="n">std_window_width</span><span class="p">)</span> <span class="ow">and</span>  <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;v_help&#39;</span><span class="p">))</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">v_help</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="p">:</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;V_init&#39;</span><span class="p">):</span> 
+                    <span class="n">V_courant</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">V_init</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">V_courant</span> <span class="o">=</span> <span class="n">get_dir</span><span class="p">(</span><span class="n">X_courant</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
+
+
+        <span class="c1"># run over different disjoint neighborhhod sites</span>
+        <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">ran</span><span class="p">:</span>
+            
+            <span class="n">vois_tr</span> <span class="o">=</span> <span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span>            
+            
+            <span class="c1"># retrieving appropriate X field (current, or fixed)</span>
+            <span class="k">if</span> <span class="n">generate_x</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X_courant</span><span class="p">)</span>
+                
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            
+            <span class="n">vals_tr_x</span> <span class="o">=</span> <span class="n">vals_tout_x</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span> <span class="c1"># this cannot be out of the &#39;for q&#39; loop !</span>
+                
+            <span class="c1"># retrieving appropriate V field (current, or fixed)</span>
+            <span class="k">if</span> <span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V_courant</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+            <span class="n">vals_tr_v</span> <span class="o">=</span> <span class="n">vals_tout_v</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span> <span class="c1"># this cannot be out of the &#39;for q&#39; loop !</span>
+            
+            <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">likelihood_y_tr</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span>    
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">likelihood_y_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">vals_tout_x</span><span class="p">)</span>
+            
+            
+                    <span class="c1">#-----------------------------------#</span>
+                    
+                    
+            
+            <span class="k">if</span> <span class="p">(</span><span class="n">generate_x</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">generate_v</span> <span class="o">==</span> <span class="kc">False</span><span class="p">):</span> <span class="c1"># we generate X |U, eventually X|V,Y</span>
+                
+                <span class="n">beta_tr</span> <span class="o">=</span> <span class="n">Beta</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span>
+                
+                <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">num_x</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>                
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> <span class="c1"># changer !</span>
+                <span class="k">else</span><span class="p">:</span> 
+                    <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span><span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                            
+
+
+                <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">probas_norm</span> <span class="o">=</span> <span class="n">probas</span> <span class="o">/</span> <span class="n">probas_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">icm</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    
+                    <span class="n">choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>       
+                    
+                    <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+                    <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">id_x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">vmin</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># actually we should call that pmin and pmax</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">vmin</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                            
+                        <span class="n">vmax</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span>
+    
+                        <span class="n">msk_choice</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span> <span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)</span>
+                        <span class="n">choice</span><span class="p">[</span><span class="n">msk_choice</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">id_choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                    
+                    <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                        <span class="n">choice</span><span class="p">[</span><span class="n">id_choice</span><span class="o">==</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                        
+               
+                <span class="n">X_courant</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">]</span> <span class="o">=</span> <span class="n">choice</span>
+       
+                    
+                    <span class="c1">#-----------------------------------#</span>
+                    
+                    
+            <span class="k">elif</span> <span class="p">(</span><span class="n">generate_x</span><span class="o">==</span><span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span> <span class="c1"># we generate U|X, eventually V,|X,Y</span>
+            
+                <span class="n">probas</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">num_v</span><span class="p">))</span>
+
+                <span class="c1"># enumerating different cases</span>
+                <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+
+                    <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                     
+                    
+                    
+                <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">probas_norm</span> <span class="o">=</span> <span class="n">probas</span> <span class="o">/</span> <span class="n">probas_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">icm</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    
+                    <span class="n">choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>       
+                    
+                    <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    
+                    <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">id_v</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">vmin</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">vmin</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                            
+                        <span class="n">vmax</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span>
+    
+                        <span class="n">msk_choice</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span> <span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)</span>
+                        <span class="n">choice</span><span class="p">[</span><span class="n">msk_choice</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
+                        
+                <span class="k">else</span><span class="p">:</span> <span class="c1">#cas deterministe:</span>
+                    <span class="n">id_choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                    
+                    <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+                        <span class="n">choice</span><span class="p">[</span><span class="n">id_choice</span><span class="o">==</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
+                
+                <span class="n">V_courant</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">]</span> <span class="o">=</span> <span class="n">choice</span>
+        
+                    <span class="c1">#-----------------------------------#</span>
+                    
+                    
+            <span class="k">elif</span> <span class="p">(</span><span class="n">generate_x</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">):</span> <span class="c1"># we generate U|X, eventually X,V, eventually X,V|Y</span>
+                
+                <span class="n">probas</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">num_v</span><span class="o">*</span><span class="n">num_x</span><span class="p">))</span>
+
+                <span class="c1"># enumerating different cases</span>
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                    
+                    <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+                        <span class="n">v</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
+                        
+                        <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v</span><span class="p">)</span>
+                        
+                        <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+             
+                <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">probas_norm</span> <span class="o">=</span> <span class="n">probas</span> <span class="o">/</span> <span class="n">probas_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">icm</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                        <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            
+                        <span class="n">choice_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>    
+                        <span class="n">choice_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>       
+                        
+                        <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            
+                        <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+                                <span class="n">indice</span> <span class="o">=</span> <span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span> <span class="o">+</span> <span class="n">id_v</span>
+                                <span class="k">if</span> <span class="p">(</span><span class="n">id_v</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">id_x</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+                                    <span class="n">vmin</span> <span class="o">=</span> <span class="mi">0</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">vmin</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">indice</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                                    
+                                <span class="n">vmax</span> <span class="o">=</span> <span class="n">cumsum</span><span class="p">[:,:,</span><span class="n">indice</span><span class="p">]</span>
+            
+                                <span class="n">msk_choice</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span> <span class="o">&gt;=</span> <span class="n">vmin</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="n">vmax</span><span class="p">)</span>
+                                
+                                <span class="n">choice_x</span><span class="p">[</span><span class="n">msk_choice</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                                <span class="n">choice_v</span><span class="p">[</span><span class="n">msk_choice</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">id_choice</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">probas_norm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="n">choice_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                    <span class="n">choice_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">choice_x</span><span class="p">)</span>
+                    
+                    <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
+                                <span class="n">indice</span> <span class="o">=</span> <span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span> <span class="o">+</span> <span class="n">id_v</span>
+                                
+                                <span class="n">choice_x</span><span class="p">[</span><span class="n">id_choice</span><span class="o">==</span><span class="n">indice</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                                <span class="n">choice_v</span><span class="p">[</span><span class="n">id_choice</span><span class="o">==</span><span class="n">indice</span><span class="p">]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
+
+                <span class="n">V_courant</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">]</span> <span class="o">=</span> <span class="n">choice_v</span>
+                <span class="n">X_courant</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">]</span> <span class="o">=</span> <span class="n">choice_x</span>
+                
+         
+       
+                    <span class="c1">#-----------------------------------#</span>
+                    
+                    
+        <span class="k">if</span> <span class="p">(</span><span class="n">k</span> <span class="o">&gt;=</span> <span class="n">std_window_width</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">autoconv</span><span class="o">==</span><span class="kc">True</span><span class="p">)</span> <span class="p">:</span>
+
+            <span class="n">nb_diff</span> <span class="o">=</span> <span class="mi">0</span>
+            
+            <span class="k">if</span> <span class="n">generate_x</span> <span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                <span class="n">nb_diff</span> <span class="o">+=</span> <span class="p">(</span><span class="n">X_courant</span><span class="o">!=</span><span class="n">X_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                
+            <span class="k">if</span> <span class="n">generate_v</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                <span class="n">nb_diff</span> <span class="o">+=</span> <span class="p">(</span><span class="n">V_courant</span><span class="o">!=</span><span class="n">V_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                
+            <span class="n">ecart_relatif</span> <span class="o">=</span> <span class="n">nb_diff</span> <span class="o">/</span> <span class="p">(</span><span class="n">S0</span><span class="o">*</span><span class="n">S1</span><span class="p">)</span>    
+        
+            <span class="k">if</span> <span class="n">generate_x</span><span class="o">==</span><span class="kc">True</span> <span class="ow">and</span> <span class="n">generate_v</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                <span class="n">ecart_relatif</span> <span class="o">/=</span><span class="mf">2.</span>
+         
+            
+            <span class="k">if</span> <span class="n">ecart_relatif</span> <span class="o">&lt;=</span> <span class="n">par</span><span class="o">.</span><span class="n">thr_conv</span><span class="p">:</span>
+                <span class="c1"># retrieving results</span>
+                <span class="k">if</span> <span class="n">generate_x</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                    
+                    <span class="n">X_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_courant</span>    
+                    <span class="n">X_res</span> <span class="o">=</span> <span class="n">X_res</span><span class="p">[:,:,:</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+                    
+                    <span class="n">par</span><span class="o">.</span><span class="n">X_res</span> <span class="o">=</span> <span class="n">X_res</span>
+                    
+                <span class="k">if</span> <span class="n">generate_v</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                    <span class="n">V_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">V_courant</span>    
+                    <span class="n">V_res</span> <span class="o">=</span> <span class="n">V_res</span><span class="p">[:,:,:</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span> 
+                    
+                    <span class="n">par</span><span class="o">.</span><span class="n">V_res</span> <span class="o">=</span> <span class="n">V_res</span>
+
+                <span class="n">par</span><span class="o">.</span><span class="n">nb_iter_conv</span> <span class="o">=</span> <span class="n">k</span>
+
+                <span class="k">break</span> 
+
+        <span class="k">if</span> <span class="n">generate_x</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>       
+            <span class="n">X_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_courant</span>   
+            <span class="n">par</span><span class="o">.</span><span class="n">X_res</span> <span class="o">=</span> <span class="n">X_res</span>
+                        
+        <span class="k">if</span> <span class="n">generate_v</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+            <span class="n">V_res</span><span class="p">[:,:,</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">V_courant</span>  
+            <span class="n">par</span><span class="o">.</span><span class="n">V_res</span> <span class="o">=</span> <span class="n">V_res</span>
+
+        <span class="n">par</span><span class="o">.</span><span class="n">nb_iter_conv</span> <span class="o">=</span> <span class="n">k</span>
+        
+    <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>  
+    
+    <span class="k">return</span> <span class="n">par</span></div>
+    
+
+
+   
+<div class="viewcode-block" id="calc_proba_xyv"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
+    
+    
+    <span class="n">energie_x</span> <span class="o">=</span> <span class="n">Beta</span> <span class="o">*</span> <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="n">alpha</span><span class="p">)</span>
+   
+    <span class="n">energie_v</span> <span class="o">=</span><span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">)</span>
+    
+    <span class="n">energie_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">likelihood</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">])</span> 
+    
+    <span class="n">proba_courant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span> <span class="n">energie_x</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">energie_v</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>  <span class="n">energie_y</span> <span class="p">)</span>
+
+
+    <span class="k">return</span> <span class="n">proba_courant</span>      </div>
+
+
+<div class="viewcode-block" id="calc_proba_xyv_pi"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv_pi">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
+    
+    <span class="c1"># Dans l&#39;utilisation : calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, parc.pi,delta,phi_uni,vois_tr) </span>
+             
+    <span class="c1"># Ponderation par les &quot;fractions d&#39;abondance&quot; pi</span>
+    <span class="c1">## pour x</span>
+
+
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        
+        
+        <span class="n">energie_x_sans_v</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span>                   <span class="c1"># ATTENTION ICI !!!</span>
+        
+        <span class="n">pi_x_tous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">config_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">vals</span><span class="o">==</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
+            <span class="n">pi_x_tous</span><span class="p">[</span><span class="n">config_x</span><span class="o">==</span><span class="n">conf</span><span class="p">]</span> <span class="o">=</span> <span class="n">pi</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">conf</span><span class="p">]</span>
+
+
+        <span class="n">energie_x_sum</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi_x_tous</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">Beta</span> <span class="o">*</span> <span class="n">energie_x_sans_v</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">energie_x_sum</span> <span class="o">=</span> <span class="mi">0</span>
+        
+            
+        
+    <span class="c1">## pour v</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals_v</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+        
+        <span class="n">energie_v</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span>                          <span class="c1"># ATTENTION ICI !!!</span>
+        
+        <span class="n">pi_v_tous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">config_v</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="o">==</span><span class="n">vals_v</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
+            <span class="n">pi_v_tous</span><span class="p">[</span><span class="n">config_v</span><span class="o">==</span><span class="n">conf</span><span class="p">]</span> <span class="o">=</span> <span class="n">pi</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">conf</span><span class="p">]</span>
+
+        
+        <span class="n">energie_v_sum</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi_v_tous</span><span class="p">)</span> <span class="o">-</span> <span class="n">energie_v</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="c1">#*8./facteurs#* (facteurs==8)</span>
+        
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">energie_v_sum</span> <span class="o">=</span> <span class="mi">0</span>
+   
+    <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span><span class="kc">True</span> <span class="p">:</span>    
+        
+        <span class="n">energie_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">likelihood</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">])</span> 
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">energie_y</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="n">proba_courant</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="n">energie_x_sum</span> <span class="o">+</span> <span class="n">energie_v_sum</span> <span class="o">+</span>  <span class="n">energie_y</span> <span class="p">)</span>
+     
+
+    <span class="k">return</span> <span class="n">proba_courant</span>      </div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jean-Baptiste Courbot.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

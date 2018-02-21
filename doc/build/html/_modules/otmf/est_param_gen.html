@@ -1,0 +1,293 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>otmf.est_param_gen &#8212; OTMF 1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for otmf.est_param_gen</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+<span class="kn">import</span> <span class="nn">scipy.cluster.vq</span> <span class="k">as</span> <span class="nn">cvq</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">import</span> <span class="n">gaussian_filter</span> 
+<span class="kn">import</span> <span class="nn">scipy.ndimage.morphology</span> <span class="k">as</span> <span class="nn">morph</span>
+
+
+<span class="kn">from</span> <span class="nn">otmf</span> <span class="k">import</span> <span class="n">gibbs_sampler</span> <span class="k">as</span> <span class="n">gs</span>
+
+
+<div class="viewcode-block" id="get_parcov"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.get_parcov">[docs]</a><span class="k">def</span> <span class="nf">get_parcov</span><span class="p">(</span><span class="n">Sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimate the three parameter ruling a penta-diagonal covariance matrix, </span>
+<span class="sd">    with identical values along the diagonals.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Sigma:ndarray</span>
+<span class="sd">        Covariance matrix</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sigma:float</span>
+<span class="sd">        Estimated value of the scalar covariance.</span>
+<span class="sd">        </span>
+<span class="sd">    rho1:float</span>
+<span class="sd">        Estimated value of the 1-offset term.</span>
+<span class="sd">        </span>
+<span class="sd">    rho2:float</span>
+<span class="sd">        Estimated value of the 2-offset term.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">W</span> <span class="o">=</span> <span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Sigma</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+    <span class="n">rho1</span><span class="o">=</span> <span class="n">Sigma</span><span class="p">[</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">rho2</span><span class="o">=</span> <span class="n">Sigma</span><span class="p">[</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">sig</span><span class="p">,</span> <span class="n">rho1</span><span class="p">,</span><span class="n">rho2</span></div>
+
+    
+<div class="viewcode-block" id="maj_parchamp"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.maj_parchamp">[docs]</a><span class="k">def</span> <span class="nf">maj_parchamp</span><span class="p">(</span><span class="n">parchamp</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span><span class="n">sig</span><span class="p">,</span><span class="n">rho1</span><span class="p">,</span><span class="n">rho2</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Set all values as fields of the parchamp class. &quot;&quot;&quot;</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">mu</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">rho_1</span> <span class="o">=</span> <span class="n">rho1</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">rho_2</span> <span class="o">=</span> <span class="n">rho2</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">alpha_v</span> <span class="o">=</span> <span class="n">alpha_v</span>
+    
+    <span class="k">return</span> <span class="n">parchamp</span></div>
+    
+    
+<div class="viewcode-block" id="mesure_ecart"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.mesure_ecart">[docs]</a><span class="k">def</span> <span class="nf">mesure_ecart</span><span class="p">(</span><span class="n">A_tout</span><span class="p">,</span><span class="n">A</span><span class="p">,</span> <span class="n">mu_tout</span><span class="p">,</span><span class="n">mu</span><span class="p">,</span><span class="n">pi_tout</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span><span class="n">taille_fen</span><span class="p">,</span><span class="n">W</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Measures the gap between parameters and an average of a parameter serie.</span>
+<span class="sd">    </span>
+<span class="sd">    Since parameters are inhomogenous, gaps are normalized and computed </span>
+<span class="sd">    parameter-wise.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A_tous:ndarray</span>
+<span class="sd">        Sequence of matrices.</span>
+<span class="sd">    A:ndarray</span>
+<span class="sd">        Single matrix.</span>
+<span class="sd">    mu_tous:ndarray</span>
+<span class="sd">        Sequence of vectors (mean parameter).</span>
+<span class="sd">    mu_tous:ndarray</span>
+<span class="sd">        Single vector.</span>
+<span class="sd">    pi_tous:ndarray</span>
+<span class="sd">        Sequence of vectors.</span>
+<span class="sd">    pi:ndarray</span>
+<span class="sd">        Single vector.</span>
+<span class="sd">    taille_fen:int</span>
+<span class="sd">        Window lenght in which the averaging is performed.</span>
+<span class="sd">    W:ind</span>
+<span class="sd">        DEPRECATED.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ecarts:ndarray</span>
+<span class="sd">        1D array containing relative gaps.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">ecart_mu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mu</span><span class="o">-</span><span class="n">mu_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mu_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    
+    <span class="n">ecart_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pi</span><span class="o">-</span><span class="n">pi_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pi_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> 
+    
+    <span class="k">if</span> <span class="n">W</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">ecart_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">A</span><span class="o">-</span><span class="n">A_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">A_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>        
+    
+        <span class="n">ecarts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecart_a</span><span class="p">,</span><span class="n">ecart_mu</span><span class="p">,</span> <span class="n">ecart_pi</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ecart_sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">A</span> <span class="o">-</span> <span class="n">A_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">A_tout</span><span class="p">[</span><span class="o">-</span><span class="n">taille_fen</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">ecarts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ecart_sig</span><span class="p">,</span> <span class="n">ecart_mu</span><span class="p">,</span> <span class="n">ecart_pi</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">ecarts</span></div>
+       
+<div class="viewcode-block" id="est_kmeans"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.est_kmeans">[docs]</a><span class="k">def</span> <span class="nf">est_kmeans</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">x_range</span><span class="p">,</span><span class="n">multi</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Simple routine for kmeans on HSI&quot;&quot;&quot;</span>
+    <span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">W</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">nanmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">msk</span> <span class="o">=</span> <span class="p">(</span><span class="n">nanmap</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>  
+    <span class="n">liste_vec</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">S0</span><span class="o">*</span><span class="n">S1</span><span class="p">,</span><span class="n">W</span><span class="p">)</span>
+    <span class="n">liste_sans_nan</span> <span class="o">=</span> <span class="n">liste_vec</span><span class="p">[</span><span class="n">msk</span><span class="o">==</span><span class="mi">0</span><span class="p">,:]</span>
+    
+    <span class="n">centroid</span><span class="p">,</span> <span class="n">X_init_flat</span> <span class="o">=</span> <span class="n">cvq</span><span class="o">.</span><span class="n">kmeans2</span><span class="p">(</span><span class="n">liste_sans_nan</span><span class="p">,</span><span class="n">x_range</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+    <span class="n">X_km_flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="o">*</span><span class="n">S1</span><span class="p">))</span>
+    <span class="n">X_km_flat</span><span class="p">[</span><span class="n">msk</span><span class="o">==</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">X_init_flat</span>
+    <span class="n">X_km_flat</span><span class="p">[</span><span class="n">msk</span><span class="o">==</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">X_km</span> <span class="o">=</span> <span class="n">X_km_flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">multi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">Y</span><span class="o">*</span><span class="p">(</span><span class="n">X_km</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="o">==</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">Y</span><span class="o">*</span><span class="p">(</span><span class="n">X_km</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="o">==</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">mean</span><span class="p">():</span>
+            <span class="n">X_km</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">X_km</span>
+    <span class="n">X_km</span> <span class="o">/=</span> <span class="p">(</span><span class="n">x_range</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">X_km</span></div>
+
+<div class="viewcode-block" id="init_params"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.init_params">[docs]</a><span class="k">def</span> <span class="nf">init_params</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">parchamp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; bla &quot;&quot;&quot;</span>
+<span class="c1">#    W = pargibbs.Y.shape[2]</span>
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">Y</span>
+    
+
+
+    <span class="k">if</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># multiclasse</span>
+        <span class="n">X_courant</span> <span class="o">=</span> <span class="n">est_kmeans</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">x_range</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        
+        <span class="n">X_courant</span> <span class="o">=</span> <span class="n">est_kmeans</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="c1">#    Y = Y[:,:,0]</span>
+        
+        <span class="k">if</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">x_range</span><span class="o">.</span><span class="n">size</span><span class="o">&gt;</span><span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># creation d&#39;un X initial continu par morceau</span>
+            
+            <span class="k">if</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+                <span class="n">x_range</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">x_range</span>
+<span class="c1">#                X_courant = gaussian_filter(X_courant.astype(float), sigma=(1,1))</span>
+                <span class="n">X_courant</span> <span class="o">=</span> <span class="n">morph</span><span class="o">.</span><span class="n">binary_closing</span><span class="p">(</span><span class="n">X_courant</span><span class="p">,</span><span class="n">iterations</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">pas</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">X_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X_courant</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x_range</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">id_x</span> <span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                        <span class="n">xmax</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">+</span><span class="n">pas</span><span class="o">/</span><span class="mf">2.</span>
+                        <span class="n">X_new</span><span class="p">[</span><span class="n">X_courant</span> <span class="o">&lt;</span> <span class="n">xmax</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                        
+                    <span class="k">elif</span> <span class="n">id_x</span> <span class="o">==</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">xmin</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">-</span><span class="n">pas</span><span class="o">/</span><span class="mf">2.</span>
+                        <span class="n">X_new</span><span class="p">[</span><span class="n">X_courant</span> <span class="o">&gt;</span> <span class="n">xmin</span><span class="p">]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">xmax</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">+</span><span class="n">pas</span><span class="o">/</span><span class="mf">2.</span>
+                        <span class="n">xmin</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">-</span><span class="n">pas</span><span class="o">/</span><span class="mf">2.</span>
+                        <span class="n">X_new</span><span class="p">[(</span><span class="n">X_courant</span> <span class="o">&gt;</span> <span class="n">xmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">X_courant</span><span class="o">&lt;</span><span class="n">xmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span>
+        
+                <span class="n">X_courant</span> <span class="o">=</span> <span class="n">X_new</span>
+                
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X_courant</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">X_courant</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span>     
+<span class="c1">#             X_courant = morph.binary_closing(X_courant,iterations = 1).astype(float)</span>
+        
+<span class="c1">#    plt.imshow(X_courant)    </span>
+    <span class="n">V_courant</span> <span class="o">=</span> <span class="n">gs</span><span class="o">.</span><span class="n">get_dir</span><span class="p">(</span><span class="n">X_courant</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">)</span>
+<span class="c1">#    plt.imshow(V_courant)    </span>
+<span class="c1">#    print pargibbs.x_range</span>
+<span class="c1">#    pargibbs.V = V_courant</span>
+    <span class="n">parchamp</span> <span class="o">=</span> <span class="n">sem</span><span class="o">.</span><span class="n">est_param_noise</span><span class="p">(</span><span class="n">X_courant</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">parchamp</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">x_range</span><span class="p">)</span>
+<span class="c1">#    print parchamp.mu</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">pi</span> <span class="o">=</span> <span class="n">sem</span><span class="o">.</span><span class="n">est_pi</span><span class="p">(</span><span class="n">X_courant</span><span class="p">,</span><span class="n">V_courant</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">)</span>
+<span class="c1">#    parchamp.pi[0,:] = np.exp(np.arange(9.)) / np.exp(np.arange(9.)).sum()</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">pi</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">9.</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">9.</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+<span class="c1">##    print parchamp.mu</span>
+
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">alpha_v</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="k">return</span> <span class="n">parchamp</span><span class="p">,</span><span class="n">X_courant</span><span class="p">,</span><span class="n">V_courant</span></div>
+ 
+    
+<div class="viewcode-block" id="gen_cov"><a class="viewcode-back" href="../../otmf.html#otmf.est_param_gen.gen_cov">[docs]</a><span class="k">def</span> <span class="nf">gen_cov</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">sig</span><span class="p">,</span><span class="n">rho_1</span><span class="p">,</span><span class="n">rho_2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; bla &quot;&quot;&quot;</span>
+    <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span><span class="o">*</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">rho_1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">))</span><span class="o">*</span><span class="n">rho_2</span>
+    <span class="k">return</span> <span class="n">Sigma</span></div>
+<span class="c1">#    </span>
+<span class="c1">#def gen_obs(pargibbs,X,W, mu,sig,rho_1,rho_2,corrnoise=False):</span>
+<span class="c1">#    </span>
+<span class="c1">#    </span>
+<span class="c1">#    if corrnoise==True:</span>
+<span class="c1">#        Sigma = gen_cov(W,sig,rho_1,rho_2)   </span>
+<span class="c1">#        </span>
+<span class="c1">#    else:</span>
+<span class="c1">#        Sigma = np.eye(W) * sig**2</span>
+<span class="c1">#    </span>
+<span class="c1">#    Y = X[:,:,np.newaxis]*mu[np.newaxis,np.newaxis,:] +np.random.multivariate_normal(mean=np.zeros_like(mu),cov=Sigma,size=(pargibbs.S0,pargibbs.S1))</span>
+<span class="c1">#    </span>
+<span class="c1">#</span>
+<span class="c1">#    </span>
+<span class="c1">#    pargibbs.Y = Y</span>
+<span class="c1">#    </span>
+<span class="c1">#    return pargibbs,Y</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jean-Baptiste Courbot.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

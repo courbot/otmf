@@ -25,7 +25,7 @@ from otmf import parameters
 from otmf import gibbs_sampler as gs
 from otmf import fields_tools as ft
 from otmf import seg_OTMF as sot
-from otmf import SEM as sem
+from otmf import SEM as sem  
 
 from scipy.ndimage import zoom
 from scipy.ndimage.filters import gaussian_filter 

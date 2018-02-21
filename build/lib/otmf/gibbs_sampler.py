@@ -124,19 +124,6 @@ def get_dir(X,par):
 
 
 def calc_likelihood(Y, x_range, multi,par):
-        """ Compute the likelihood of Y given all possible classes and the noise parameters.
-        
-        **Note** To be simplified.
-        
-        This function **does not** acount for the FSF.
-         
-        :param ndarray Y: Hyperspectral observation
-        :param ndarray x_range: set of possible x
-        :param bool multi: deprecated
-        :param parameter par: parameter set of the Gibbs sampling
-        
-        :returns: **likelihood_y** *(ndarray)* Likelihood values, aranged in (x-dim,y-dim, number of classes).  
-        """
     
         S0,S1,W = Y.shape
         num_x = x_range.size
@@ -179,19 +166,17 @@ def calc_likelihood(Y, x_range, multi,par):
 
  
 def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,icm=False):
-    """Markov field simulation, either by Gibbs sampling or ICM.
-
-
-    :param parameter par: parameter set of the Gibbs sampling    
-    :param bool generate_v: set if we generate [True] or know [False] the V array (orientations).
-    :param bool generate_x: set if we generate [True] or know [False] the X array (classes).
-    :param bool use_y: set if we know [True] or ignore [False] an observation Y.
-    :param bool normal: set if we use the standard [True] or chromatic [False] Gibbs sampler.
-                        The second one is faster by several order of magnitude on large images.
-    :param bool icm: set if the realization is deterministic (ICM) or not (Gibbs).
-
-    :returns: **par** *(ParamsGibbs)* parameter containing the simulation output.
-     """
+    """ Generation d'un champs de Gibbs a partir d'une initialisation
+    angle en radians    
+    Situations prises en compte :
+    X,V |Y
+    X|Y V fixe
+    V|Y X fixe
+    
+    
+    icm specifie si l'on est en déterministe
+    
+    """
    
     np.random.seed() # this is important if used in parrallel !!
     
@@ -199,13 +184,13 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
     S1 = par.S1    
     fuzzy = par.fuzzy
     nb_fuzzy = par.nb_fuzzy
-
+#    ran_fuzz = np.arange(0,nb_fuzzy+1)/nb_fuzzy
     alpha = par.alpha 
     alpha_v = par.alpha_v
     beta = par.beta
     delta = par.delta
     phi_uni = par.phi_uni
-
+    phi_theta_0 = par.phi_theta_0 
     multi=par.multi
     parc = par.parchamp
     
@@ -237,12 +222,14 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
             X = np.zeros(shape=(S0,S1))
 
     ####################################
-    # Auxiliary field V :      
+    # Auxiliarry field V :      
     if generate_v == True:
         v_range=par.v_range
         num_v = v_range.size  
+        
 
-        if hasattr(par,'V_init')==0: 
+        if hasattr(par,'V_init')==0: # Attention ici !!!
+            
             if generate_x==False: #U|X        
                 V_init = get_dir(X,par)
             else:
@@ -258,7 +245,8 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
         V = par.V
 
     ################################### 
-    if use_y == True: # if there is an observation, we compute the likelihood
+    if use_y == True:
+
         likelihood_y = calc_likelihood(par.Y, x_range, multi,par)
  
 
@@ -266,12 +254,10 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
     # To speed up the gibbs sampler
     # defining quadrants
     if normal == False:
-        # we are in the "chromatic" Gibbs sampler setting.
+        # parcours sur un graphe "colore"
     
 #        dq =  np.array([[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3],
 #                        [0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3]  ])
-        # above is an alternative choice for the grid (weak influence on the 
-        # result)
         dq =  np.array([[0,1,1,0],
                         [0,0,1,1]])
                         

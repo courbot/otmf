@@ -1,0 +1,62 @@
+lib package
+===========
+
+Submodules
+----------
+
+lib\.SEM module
+---------------
+
+.. automodule:: lib.SEM
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.est\_param\_gen module
+---------------------------
+
+.. automodule:: lib.est_param_gen
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.fields\_tools module
+-------------------------
+
+.. automodule:: lib.fields_tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.gibbs\_sampler module
+--------------------------
+
+.. automodule:: lib.gibbs_sampler
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.parameters module
+----------------------
+
+.. automodule:: lib.parameters
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.seg\_OTMF module
+---------------------
+
+.. automodule:: lib.seg_OTMF
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: lib
+    :members:
+    :undoc-members:
+    :show-inheritance:

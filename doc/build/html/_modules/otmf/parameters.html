@@ -1,0 +1,222 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>otmf.parameters &#8212; OTMF 1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for otmf.parameters</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Thu Jan 14 17:23:09 2016</span>
+
+<span class="sd">@author: courbot</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">otmf</span> <span class="k">import</span> <span class="n">fields_tools</span> <span class="k">as</span> <span class="n">ft</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="ParamsGibbs"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsGibbs">[docs]</a><span class="k">class</span> <span class="nc">ParamsGibbs</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
+                  <span class="n">S0</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+                  <span class="n">S1</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> 
+                  <span class="n">nb_iter</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+                  <span class="n">fuzzy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                  <span class="n">nb_fuzzy</span><span class="o">=</span><span class="mf">32.</span><span class="p">,</span>
+                  <span class="n">prop_fuzzy</span> <span class="o">=</span> <span class="mf">0.59</span><span class="p">,</span>
+                  <span class="n">anisotropic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">v_range</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">x_range</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">v_help</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                  <span class="n">nb_nn_v_help</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
+                  <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+                  <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
+                  <span class="n">alpha_v</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
+                  <span class="n">beta</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                  <span class="n">delta</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">phi_uni</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
+                  <span class="n">type_pot</span> <span class="o">=</span> <span class="s1">&#39;potts&#39;</span><span class="p">,</span>
+                  <span class="n">init_method</span> <span class="o">=</span> <span class="s1">&#39;std&#39;</span><span class="p">,</span>
+                  <span class="n">thr_conv</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+                  <span class="n">autoconv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                  <span class="n">multi</span> <span class="o">=</span> <span class="kc">False</span>
+                      
+                <span class="p">):</span> 
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">S0</span> <span class="o">=</span> <span class="n">S0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S1</span> <span class="o">=</span> <span class="n">S1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">nb_iter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fuzzy</span> <span class="o">=</span> <span class="n">fuzzy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_fuzzy</span> <span class="o">=</span> <span class="n">nb_fuzzy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prop_fuzzy</span> <span class="o">=</span> <span class="n">prop_fuzzy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic</span><span class="o">=</span><span class="n">anisotropic</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_range</span> <span class="o">=</span> <span class="n">v_range</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">x_range</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v_help</span> <span class="o">=</span> <span class="n">v_help</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_nn_v_help</span> <span class="o">=</span> <span class="n">nb_nn_v_help</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">phi_theta_0</span> <span class="o">=</span> <span class="n">phi_theta_0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha_v</span> <span class="o">=</span> <span class="n">alpha_v</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phi_uni</span> <span class="o">=</span> <span class="n">phi_uni</span>
+        <span class="k">if</span> <span class="n">type_pot</span><span class="o">==</span><span class="s1">&#39;potts&#39;</span><span class="p">:</span>
+            <span class="n">phi_uni</span> <span class="o">=</span> <span class="mf">0.</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">type_pot</span> <span class="o">=</span> <span class="n">type_pot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init_method</span> <span class="o">=</span> <span class="n">init_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thr_conv</span> <span class="o">=</span> <span class="n">thr_conv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">autoconv</span><span class="o">=</span><span class="n">autoconv</span>
+        
+        
+        <span class="n">Vois</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S0</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S1</span><span class="p">):</span>
+                <span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_num_voisins</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vois</span> <span class="o">=</span> <span class="n">Vois</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">multi</span></div>
+        
+        
+
+        
+<div class="viewcode-block" id="ParamsChamps"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsChamps">[docs]</a><span class="k">class</span> <span class="nc">ParamsChamps</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
+                  <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
+                  <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">mu</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">sig</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
+                  <span class="n">rho</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="p">):</span> 
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phi_theta_0</span> <span class="o">=</span> <span class="n">phi_theta_0</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">mu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rho</span> <span class="o">=</span> <span class="n">rho</span></div>
+        
+        <span class="c1"># define a parameters stack here?</span>
+
+<div class="viewcode-block" id="ParamsSeg"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsSeg">[docs]</a><span class="k">class</span> <span class="nc">ParamsSeg</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>   <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">nb_iter_sem</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="c1"># nb d&#39;iter maximum pour SEM</span>
+                    <span class="n">nb_rea</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># nombre de realisations de Gibbs differentes pour le MPM</span>
+                    <span class="n">taille_fen</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="c1"># fenetre pour la convergence de SEM</span>
+                    <span class="n">seuil_conv</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="c1"># convergence de SEM</span>
+                    
+                    <span class="n">nb_iter_mpm</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># longueur max. pour les Gibbs dans le MPM</span>
+                    <span class="n">pargibbs_nb_iter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> 
+                    <span class="n">pargibbs_autoconv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="c1"># convergence automatique des estimateurs de Gibbs</span>
+                    <span class="n">pargibbs_thr_conv</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span> <span class="c1"># seuil pour cette convergence, en relatif</span>
+                    <span class="n">incert</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Utilisation ou non de segmentation avec incertitude</span>
+                    <span class="n">pargibbs_Xi</span> <span class="o">=</span> <span class="mf">0.</span> <span class="p">,</span>  <span class="c1"># valeur de l&#39;&quot;incertitude&quot; adoptee</span>
+                    <span class="n">tmf</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="p">):</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter_sem</span><span class="o">=</span><span class="n">nb_iter_sem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_rea</span> <span class="o">=</span> <span class="n">nb_rea</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">taille_fen</span> <span class="o">=</span> <span class="n">taille_fen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seuil_conv</span> <span class="o">=</span> <span class="n">seuil_conv</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter_mpm</span> <span class="o">=</span> <span class="n">nb_iter_mpm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_nb_iter</span> <span class="o">=</span> <span class="n">pargibbs_nb_iter</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_autoconv</span><span class="o">=</span><span class="n">pargibbs_autoconv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_thr_conv</span> <span class="o">=</span> <span class="n">pargibbs_thr_conv</span> <span class="c1"># seuil pour cette convergence, en relatif</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">incert</span> <span class="o">=</span> <span class="n">incert</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_Xi</span> <span class="o">=</span> <span class="n">pargibbs_Xi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmf</span> <span class="o">=</span> <span class="n">tmf</span></div>
+        
+<div class="viewcode-block" id="apply_parseg_pargibbs"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.apply_parseg_pargibbs">[docs]</a><span class="k">def</span> <span class="nf">apply_parseg_pargibbs</span><span class="p">(</span><span class="n">parseg</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">):</span>
+    
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_nb_iter</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">autoconv</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_autoconv</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">thr_conv</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_thr_conv</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">Xi</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_Xi</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">multi</span>
+    
+    <span class="k">return</span> <span class="n">pargibbs</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jean-Baptiste Courbot.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

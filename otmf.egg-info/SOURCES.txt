@@ -1,11 +1,11 @@
 setup.py
-lib/SEM.py
 lib/__init__.py
-lib/est_param_gen.py
 lib/fields_tools.py
 lib/gibbs_sampler.py
+lib/mpm.py
+lib/parameter_estimation.py
 lib/parameters.py
-lib/seg_OTMF.py
+lib/segmentation.py
 otmf.egg-info/PKG-INFO
 otmf.egg-info/SOURCES.txt
 otmf.egg-info/dependency_links.txt

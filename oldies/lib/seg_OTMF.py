@@ -7,16 +7,14 @@ This module contains the image segmentation functions.
 :date: Sep 01, 2017 (created Nov 03, 2015)
 """
 
-
-
 import numpy as np 
 import time
 import gc
 import multiprocessing as mp
 
-from otmf import parameters
-from otmf import gibbs_sampler as gs
-#from otmf import SEM as sem
+from otmf.parameters import ParamsChamps
+from otmf.gibbs_sampler import gen_champs_fast
+from otmf.parameter_estimation import SEM
 
 
 def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
@@ -25,7 +23,7 @@ def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
         This functions uses multiprocessing.
         
     :param misc pargibbs: parameters of the Gibbs sampling.    
-    :param int nb_rea: set how many independant samplig there will be.       
+    :param int nb_rea: set how many independant sampling there will be.       
     :returns: **pargibbs** *(parameter)* parameters containing the Gibbs samples.
     
     """ 
@@ -40,7 +38,7 @@ def serie_gibbs(pargibbs,nb_rea,generate_v,generate_x,use_y,use_pi,tmf=True):
     nb_proc = np.minimum(mp.cpu_count(),31)
     pool = mp.Pool(processes=nb_proc-1,maxtasksperchild=1)
     results = {}
-    results = [pool.apply_async(gs.gen_champs_fast,args=(pargibbs,generate_v,generate_x,use_y,normal,use_pi)) for i in range(nb_rea)]
+    results = [pool.apply_async(gen_champs_fast,args=(pargibbs,generate_v,generate_x,use_y,normal,use_pi)) for i in range(nb_rea)]
     output = [p.get() for p in results]
     pool.close()
     pool.join()
@@ -94,9 +92,9 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
 
     nb_iter_mpm = parseg.nb_iter_mpm
     nb_rea = parseg.nb_rea
-    incert=parseg.incert
+#    incert=parseg.incert
 
-    parchamp = parameters.ParamsChamps()
+    parchamp = ParamsChamps()
     v_help = True
     pargibbs.nb_nn_v_help = 1 # param a supprimer
     pargibbs.v_help=v_help # useless? no !
@@ -116,7 +114,7 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
             start=time.time()
 
         # Unsupervized parameter estimation with SEM
-        parsem = sem.SEM(parseg,parchamp,pargibbs) #!!!
+        parsem = SEM(parseg,parchamp,pargibbs) #!!!
 
         nb_iter_effectif = parsem.sig_sem.shape[0]-1
         if disp:
@@ -161,11 +159,11 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
         # B 2) if the estimator is the MAP, we approach it by ICM
 
         if parseg.tmf==True:
-            pargibbs = gs.gen_champs_fast(pargibbs,generate_v=True,generate_x=True,use_y=True,normal=False,use_pi=True,icm=True)
+            pargibbs = gen_champs_fast(pargibbs,generate_v=True,generate_x=True,use_y=True,normal=False,use_pi=True,icm=True)
         else:
             pargibbs.phi_theta_0 =0.
             pargibbs.V = np.zeros(shape=(pargibbs.S0,pargibbs.S1))#(pargibbs.X_res[:,:,-1])
-            pargibbs= gs.gen_champs_fast(pargibbs,generate_v=False,generate_x=True,use_y=True,normal=False,use_pi=True,icm=True)
+            pargibbs= gen_champs_fast(pargibbs,generate_v=False,generate_x=True,use_y=True,normal=False,use_pi=True,icm=True)
             pargibbs.V_res = np.zeros_like(pargibbs.X_res)
     
         X_est = pargibbs.X_res[:,:,-1]

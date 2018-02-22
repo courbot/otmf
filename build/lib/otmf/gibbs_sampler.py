@@ -6,7 +6,7 @@ Created on Mon Feb  1 14:59:34 2016
 """
 import numpy as np
 import scipy.stats as st
-from otmf import fields_tools as ft
+from otmf.fields_tools import gen_beta,psi_ising,get_vals_voisins_tout,init_champs
 import gc
 
 from scipy import interpolate
@@ -52,19 +52,7 @@ def cast_angles(V,v_range):
         else:
             V_new[(Vcb>=vmin)*(Vcb<vmax)] = v_range[i]      
     
-#    decal = v_range[0]/2.
-#    
-#    V_new = ((V+decal)-(V+decal)%(v_range[0]))%np.pi
-    
-    
-#    v_range_new = v_range[v_range!=0]
-#    for i in range(V.shape[0]):
-#        for j in range(V.shape[1]):
-#            if np.isnan(V[i,j])==0:
-#                ecart = np.abs(V[i,j] - v_range)%np.pi
-#                ind_min = np.argmin(ecart)
-#        
-#                V_new[i,j] =v_range[ind_min]   
+
     return V_new
 
 def get_dir(X,par):
@@ -124,6 +112,19 @@ def get_dir(X,par):
 
 
 def calc_likelihood(Y, x_range, multi,par):
+        """ Compute the likelihood of Y given all possible classes and the noise parameters.
+        
+        **Note** To be simplified.
+        
+        This function **does not** acount for the FSF.
+         
+        :param ndarray Y: Hyperspectral observation
+        :param ndarray x_range: set of possible x
+        :param bool multi: deprecated
+        :param parameter par: parameter set of the Gibbs sampling
+        
+        :returns: **likelihood_y** *(ndarray)* Likelihood values, aranged in (x-dim,y-dim, number of classes).  
+        """
     
         S0,S1,W = Y.shape
         num_x = x_range.size
@@ -166,31 +167,32 @@ def calc_likelihood(Y, x_range, multi,par):
 
  
 def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,icm=False):
-    """ Generation d'un champs de Gibbs a partir d'une initialisation
-    angle en radians    
-    Situations prises en compte :
-    X,V |Y
-    X|Y V fixe
-    V|Y X fixe
-    
-    
-    icm specifie si l'on est en déterministe
-    
-    """
+    """Markov field simulation, either by Gibbs sampling or ICM.
+
+
+    :param parameter par: parameter set of the Gibbs sampling    
+    :param bool generate_v: set if we generate [True] or know [False] the V array (orientations).
+    :param bool generate_x: set if we generate [True] or know [False] the X array (classes).
+    :param bool use_y: set if we know [True] or ignore [False] an observation Y.
+    :param bool normal: set if we use the standard [True] or chromatic [False] Gibbs sampler.
+                        The second one is faster by several order of magnitude on large images.
+    :param bool icm: set if the realization is deterministic (ICM) or not (Gibbs).
+
+    :returns: **par** *(ParamsGibbs)* parameter containing the simulation output.
+     """
    
     np.random.seed() # this is important if used in parrallel !!
     
     S0 = par.S0
     S1 = par.S1    
-    fuzzy = par.fuzzy
-    nb_fuzzy = par.nb_fuzzy
-#    ran_fuzz = np.arange(0,nb_fuzzy+1)/nb_fuzzy
+
+
     alpha = par.alpha 
     alpha_v = par.alpha_v
     beta = par.beta
     delta = par.delta
     phi_uni = par.phi_uni
-    phi_theta_0 = par.phi_theta_0 
+
     multi=par.multi
     parc = par.parchamp
     
@@ -206,7 +208,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
         x_range=par.x_range
         num_x = x_range.size
         if hasattr(par,'X_init')==0:
-            X_init = ft.init_champs(par)   
+            X_init = init_champs(par)   
         else:
             X_init = par.X_init
             
@@ -222,14 +224,12 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
             X = np.zeros(shape=(S0,S1))
 
     ####################################
-    # Auxiliarry field V :      
+    # Auxiliary field V :      
     if generate_v == True:
         v_range=par.v_range
         num_v = v_range.size  
-        
 
-        if hasattr(par,'V_init')==0: # Attention ici !!!
-            
+        if hasattr(par,'V_init')==0: 
             if generate_x==False: #U|X        
                 V_init = get_dir(X,par)
             else:
@@ -245,8 +245,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
         V = par.V
 
     ################################### 
-    if use_y == True:
-
+    if use_y == True: # if there is an observation, we compute the likelihood
         likelihood_y = calc_likelihood(par.Y, x_range, multi,par)
  
 
@@ -254,10 +253,12 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
     # To speed up the gibbs sampler
     # defining quadrants
     if normal == False:
-        # parcours sur un graphe "colore"
+        # we are in the "chromatic" Gibbs sampler setting.
     
 #        dq =  np.array([[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3],
 #                        [0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3]  ])
+        # above is an alternative choice for the grid (weak influence on the 
+        # result)
         dq =  np.array([[0,1,1,0],
                         [0,0,1,1]])
                         
@@ -288,7 +289,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
         for i in xrange(S0):
             for j in xrange(S1):
                 if np.isnan(V[i,j])==0:
-                     Beta[i,j,:] =  ft.gen_beta(Vois[i,j],V[i,j]) # il faudra en faire un qui gere les images
+                     Beta[i,j,:] =  gen_beta(Vois[i,j],V[i,j]) # il faudra en faire un qui gere les images
 
     for k in xrange(par.nb_iter):
         # random permutations of the quadrant order :
@@ -309,18 +310,18 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
             
             # retrieving appropriate X field (current, or fixed)
             if generate_x == True:
-                vals_tout_x = ft.get_vals_voisins_tout(X_courant)
+                vals_tout_x = get_vals_voisins_tout(X_courant)
                 
             else:
-                vals_tout_x = ft.get_vals_voisins_tout(X)
+                vals_tout_x = get_vals_voisins_tout(X)
             
             vals_tr_x = vals_tout_x[dq[0,q]::pas_q,dq[1,q]::pas_q,:] # this cannot be out of the 'for q' loop !
                 
             # retrieving appropriate V field (current, or fixed)
             if generate_v == True:
-                vals_tout_v = ft.get_vals_voisins_tout(V_courant)
+                vals_tout_v = get_vals_voisins_tout(V_courant)
             else:
-                vals_tout_v = ft.get_vals_voisins_tout(V)
+                vals_tout_v = get_vals_voisins_tout(V)
             vals_tr_v = vals_tout_v[dq[0,q]::pas_q,dq[1,q]::pas_q,:] # this cannot be out of the 'for q' loop !
             
             if use_y == True:
@@ -340,10 +341,10 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                 probas = np.zeros(shape=(vois_tr.shape[0],vois_tr.shape[1],num_x))
                 if use_pi==False:
                     for id_x in range(num_x):                
-                        probas[:,:,id_x] = calc_proba_xyv(x_range[id_x],0, likelihood_y_tr, vals_tr_x,0, beta_tr, fuzzy,nb_fuzzy, alpha,alpha_v,beta,delta,phi_uni,vois_tr) # changer !
+                        probas[:,:,id_x] = calc_proba_xyv(x_range[id_x],0, likelihood_y_tr, vals_tr_x,0, beta_tr, alpha,alpha_v,beta,vois_tr) # changer !
                 else: 
                     for id_x in range(num_x):  
-                        probas[:,:,id_x] = calc_proba_xyv_pi(x_range,v_range,id_x,0, likelihood_y_tr,use_y, vals_tr_x,0, beta_tr,fuzzy,nb_fuzzy, parc.pi, alpha,alpha_v,delta,phi_uni,vois_tr)                            
+                        probas[:,:,id_x] = calc_proba_xyv_pi(x_range,v_range,id_x,0, likelihood_y_tr,use_y, vals_tr_x,0, beta_tr, parc.pi, alpha,alpha_v,vois_tr)                            
 
 
                 probas_sum = probas.sum(axis=2)
@@ -387,12 +388,12 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                 # enumerating different cases
                 for id_v in range(num_v):
 
-                    Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v_range[id_v])
+                    Beta_tr = gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v_range[id_v])
 
                     if use_pi==False:
-                        probas[:,:,id_v] = calc_proba_xyv(0,v_range[id_v], likelihood_y_tr, 0,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, alpha,alpha_v,beta,delta,phi_uni,vois_tr) 
+                        probas[:,:,id_v] = calc_proba_xyv(0,v_range[id_v], likelihood_y_tr, 0,vals_tr_v, Beta_tr, alpha,alpha_v,beta,delta,phi_uni,vois_tr) 
                     else:
-                        probas[:,:,id_v] = calc_proba_xyv_pi(x_range,v_range,0,v_range[id_v], likelihood_y_tr,use_y, 0,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, parc.pi,delta,phi_uni,vois_tr)                     
+                        probas[:,:,id_v] = calc_proba_xyv_pi(x_range,v_range,0,v_range[id_v], likelihood_y_tr,use_y, 0,vals_tr_v, Beta_tr, parc.pi,vois_tr)                     
                     
                     
                 probas_sum = probas.sum(axis=2)
@@ -438,13 +439,13 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                     for id_v in range(num_v):
                         v = v_range[id_v]
                         
-                        Beta_tr = ft.gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v)
+                        Beta_tr = gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v)
                         
                         if use_pi==False:
-                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv(x_range[id_x],v_range[id_v], likelihood_y_tr, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, alpha, alpha_v,beta,delta,phi_uni,vois_tr) 
+                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv(x_range[id_x],v_range[id_v], likelihood_y_tr, vals_tr_x,vals_tr_v, Beta_tr,  alpha, alpha_v,beta,vois_tr) 
                         else:
-                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, parc.pi,alpha,alpha_v,delta,phi_uni,vois_tr) 
-             
+                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr,  parc.pi,alpha,alpha_v,vois_tr) 
+                                                           
                 probas_sum = probas.sum(axis=2)
                 probas_norm = probas / probas_sum[:,:,np.newaxis]
                 
@@ -542,12 +543,12 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
 
 
    
-def calc_proba_xyv(x_range,id_x,v,likelihood,vals,vals_v, Beta, fuzzy,nb_fuzzy, alpha,alpha_v,beta,delta,phi_uni,vois):
+def calc_proba_xyv(x_range,id_x,v,likelihood,vals,vals_v, Beta, alpha,alpha_v,vois):
     
     
-    energie_x = Beta * ft.psi_ising( x_range[id_x], vals,alpha)
+    energie_x = Beta * psi_ising( x_range[id_x], vals,alpha)
    
-    energie_v =ft.psi_ising( v, vals_v,alpha_v)
+    energie_v =psi_ising( v, vals_v,alpha_v)
     
     energie_y = np.log(likelihood[:,:,id_x]) 
     
@@ -557,19 +558,29 @@ def calc_proba_xyv(x_range,id_x,v,likelihood,vals,vals_v, Beta, fuzzy,nb_fuzzy, 
     return proba_courant      
 
 
-def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta, fuzzy,nb_fuzzy, pi, alpha,alpha_v,delta,phi_uni,vois):
+def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta, pi, alpha,alpha_v,vois):
+    """ Compute p(X, V|x_neighbor, v_neighbor, y)
     
-    # Dans l'utilisation : calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, parc.pi,delta,phi_uni,vois_tr) 
-             
-    # Ponderation par les "fractions d'abondance" pi
-    ## pour x
-
-
+    :param ndarray x_range: possible values for x
+    :param ndarray v_range: possible values for v
+    :param int id_x: indice of x classe.
+    :param int id_x: value of v.
+    :param ndarray likelihood: likelihood of x,v given y.
+    :param bool use_y: set if we use an observation y [True] or not [False]
+    :param ndarray vals: x neighbor values
+    :param ndarray vals_v: v neighbor values
+    :param ndarray pi: prior parameter.
+    :param ndarray phi: precomputed value of phi.
+    :param ndarray alpha: prior "granularity" parameter.
+    
+    
+    :returns: **proba_courant** *(ndarray)* probability computation.
+    """
 
     if isinstance(vals,(np.ndarray)):
         
         
-        energie_x_sans_v =  ft.psi_ising( x_range[id_x], vals,1.)                   # ATTENTION ICI !!!
+        energie_x_sans_v =  psi_ising( x_range[id_x], vals,alpha)
         
         pi_x_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_x = (vals==x_range[id_x]).sum(axis=2)
@@ -587,7 +598,7 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     ## pour v
     if isinstance(vals_v,(np.ndarray)):
         
-        energie_v =  ft.psi_ising( v, vals_v,1.)                          # ATTENTION ICI !!!
+        energie_v =  psi_ising( v, vals_v,alpha_v)
         
         pi_v_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_v = (v==vals_v).sum(axis=2)
@@ -595,13 +606,11 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
             pi_v_tous[config_v==conf] = pi[1,conf]
 
         
-        energie_v_sum =  np.log(pi_v_tous) - energie_v.sum(axis=2)#*8./facteurs#* (facteurs==8)
-        
+        energie_v_sum =  np.log(pi_v_tous) - energie_v.sum(axis=2)
     else:
         energie_v_sum = 0
    
     if use_y ==True :    
-        
         energie_y = np.log(likelihood[:,:,id_x]) 
     else:
         energie_y = 0

@@ -6,9 +6,9 @@ This module contains all the functions related to parameter estimation.
 :date: Sep 01, 2017 (created Apr 20, 2016)
 """
 import numpy as np 
-from otmf import fields_tools as ft
-from otmf import est_param_gen as epg
-from otmf import seg_OTMF as sot
+from . import fields_tools as ft
+from . import est_param_gen as epg
+from . import seg_OTMF as sot
 
 
 def SEM(parseg,parchamp,pargibbs,disp=False):

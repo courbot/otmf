@@ -4,7 +4,7 @@ Created on Thu Jan 14 17:23:09 2016
 
 @author: courbot
 """
-from otmf import fields_tools as ft
+from otmf.fields_tools import get_num_voisins
 import numpy as np
 
 class ParamsGibbs():
@@ -66,7 +66,7 @@ class ParamsGibbs():
         Vois = np.zeros(shape=(S0,S1,8))
         for i in xrange(S0):
             for j in xrange(S1):
-                Vois[i,j,:] = ft.get_num_voisins(i,j,np.zeros(shape=(S0,S1)))
+                Vois[i,j,:] = get_num_voisins(i,j,np.zeros(shape=(S0,S1)))
         self.Vois = Vois
         
         self.multi = multi

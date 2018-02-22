@@ -11,8 +11,6 @@ from scipy.ndimage.filters import gaussian_filter
 import scipy.ndimage.morphology as morph
 
 from otmf.fields_tools import get_vals_voisins_tout,gen_beta
-#from otmf.seg_OTMF import serie_gibbs
-#from otmf.seg_OTMF import  MPM_uncert
 from otmf.gibbs_sampler import get_dir
 
 from otmf import mpm as mpm
@@ -30,17 +28,15 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     :param parameters parseg: parameters ruling the segmentation method
     :param parameters parchamp: parameters of the model (priors, noise parameters)
     :param parameters pargibbs: parameters of the Gibbs sampling.
-    :param bool disp: set the verbose mode [True]
+    :param bool disp: set the verbose mode [False/True]
 
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
     Y = pargibbs.Y
     W = pargibbs.W
-    if parseg.multi:
-        nb_classe = pargibbs.x_range.size
-    else:
-        nb_classe = 1 #useless?
-        
+
+    nb_classe = pargibbs.x_range.size
+  
     # recuperation parametres de segmentation
     nb_iter_sem, seuil_conv, taille_fen = parseg.nb_iter_sem, parseg.seuil_conv,parseg.taille_fen
 
@@ -195,15 +191,15 @@ def est_param_noise(X,Y,parchamp,x_range):
 
     nb_classe = x_range.size
      
-    # compute the mean mu
+    # compute the means mu
     mu = np.zeros(shape=(nb_classe,1))
     for id_x in range(nb_classe):
          mask = (X == x_range[id_x])
          Y_manip = Y[:,:,0]
          mu[id_x] = Y_manip[mask].mean()
-         # ajouter la possibilite d'avoir zero instance
+
     
-    # compute the STD sig
+    # compute the standard deviations sig
     sig = np.zeros(shape=(nb_classe))
     
     nb_classe = x_range.size
@@ -213,8 +209,6 @@ def est_param_noise(X,Y,parchamp,x_range):
          Y_manip = Y[:,:,0] -  mu[id_x] * mask
     
          sig[id_x] = np.std(Y_manip[mask].flatten())
-                 
-    # Retrieving
 
     parchamp.mu = mu
     parchamp.sig= sig     
@@ -224,6 +218,7 @@ def est_param_noise(X,Y,parchamp,x_range):
 def est_pi(X,V,pargibbs):
     """ 
     Estimation of the prior parameter pi.
+    
     
     :param ndarray X: "hidden" classification
     :param ndarray V: "hidden" orientations
@@ -239,8 +234,9 @@ def est_pi(X,V,pargibbs):
     iseq = (V[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
     
-    pi_est=np.zeros(shape=(2,9)) # 2 champs, 9 types de config.
+    pi_est=np.zeros(shape=(2,9)) # 2 fields, 9 possible configurations
    
+    # First let us evaluate the terms related to V :
     energies =1-2*iseq
     energies_sum = energies.sum(axis=2)
     for a in range(9) :       
@@ -250,22 +246,16 @@ def est_pi(X,V,pargibbs):
 
             secondterme  = np.exp(-energies_sum[msk_a]).mean()
 
-            pi_est[1,a] = proba_empirique * secondterme#/denom#np.exp(energie_config)
+            pi_est[1,a] = proba_empirique * secondterme
             
         else:
             pi_est[1,a] = 0
     
    
-    # Pour X maintenant :
-    if pargibbs.multi:
-       X_nn = np.copy(X)  # il faudra bien réfléchir à ce qu'on fait dans le cas d'un mélange...
-    else:
-       X_nn = (X>0) # carte de X non nul - toute les fractions de 1 sont vues comme 1
+    # Now let us evaluate the terms related to X :
 
-    # A changer pour le multi-classe !!!
-       
-    vals_vois = get_vals_voisins_tout(X_nn)   
-    iseq = (X_nn[:,:,np.newaxis]== vals_vois)
+    vals_vois = get_vals_voisins_tout(X)   
+    iseq = (X[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
 
     # Ponderation des voisinages
@@ -291,6 +281,8 @@ def est_pi(X,V,pargibbs):
         else:
             pi_est[0,a] = 0
         
+    # Finally we normalize so that NaN are ignored :    
+    
     pi_est[0,:]/= pi_est[0,~np.isnan(pi_est[0,:])].sum()
     pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum()
     
@@ -298,7 +290,8 @@ def est_pi(X,V,pargibbs):
     pi_est[np.isnan(pi_est)+(pi_est==0)] = 0.01/(S0*S1)
     
     pi_est[0,:]/= pi_est[0,~np.isnan(pi_est[0,:])].sum()
-    pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum() # juste mais negligeable
+    pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum()
+    # The two latter steps are accurate but of negligible effect on the result.
     
     return pi_est
   
@@ -307,6 +300,8 @@ def est_pi(X,V,pargibbs):
 def est_param_de_x(X):
     """
     Estimation of the :math:`\\alpha` parameter from a realization :math:`X=x`.
+    
+    The methods is adapted from Derin and Elliot's paper.
     
     :param ndarray X: Values taken by :math:`x`
 

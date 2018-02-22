@@ -43,10 +43,6 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         
     # recuperation parametres de segmentation
     nb_iter_sem, seuil_conv, taille_fen = parseg.nb_iter_sem, parseg.seuil_conv,parseg.taille_fen
-  
-    # mono versus multi-band
-    if W == 1:
-        mono = True
 
     x_range=pargibbs.x_range
 
@@ -58,13 +54,9 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     alpha_v_sem = np.zeros(shape=(nb_iter_sem))
 
     mu_sem = np.zeros(shape=(nb_iter_sem,W,nb_classe)) ;    
-    rho1_sem, rho2_sem = np.zeros(shape=(nb_iter_sem)), np.zeros(shape=(nb_iter_sem))
+  
     pi_sem =  np.zeros(shape=(nb_iter_sem,2,9)) # deux champs, 9 types de config
-    
-    if mono==False:
-        A_sem = np.zeros(shape=(nb_iter_sem,W,W)) # ce sont les matrices de covariance
-    else:
-        A_sem = np.zeros(shape=(nb_iter_sem)) # ce sont des ecart-type
+
         
     # mesure des écarts entre paramètres
     ecart_tous =  np.zeros(shape=(nb_iter_sem-taille_fen,3))
@@ -148,51 +140,30 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         
         parchamp.alpha_v = 1.
         
-        #==============================================================================
-        #         on stocke ces donnees
-        #==============================================================================
 
-        # attention la forme du mu pourrait poser probleme en mono classe
-        #faire une option ici
-        
-                #ici   
         mu_sem[iter_sem,:,:], sig_sem[iter_sem,:], pi_sem[iter_sem,:,:], alpha_sem[iter_sem], alpha_v_sem[iter_sem]= parchamp.mu.T, parchamp.sig, parchamp.pi,parchamp.alpha,parchamp.alpha_v
         
-        if mono==False:
-            rho1_sem[iter_sem], rho2_sem[iter_sem] = parchamp.rho_1, parchamp.rho_2
-            A_sem[i,:,:] = np.linalg.inv(gen_cov(W,parchamp.sig,parchamp.rho_1,parchamp.rho_2))
 
         #==============================================================================
         #       Decision to stop or continue
         #==============================================================================
         if i > taille_fen:
-              if mono==False:
-                  ecart_tous[i-taille_fen,:] = mesure_ecart(A_sem[:i,:,:],A_sem[i,:,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
-              else:
-                          #ici   
-#                  print ecart_tous[i-taille_fen,:]#shape
-                  ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
+            ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
               
-              if (ecart_tous[i-taille_fen,:]<seuil_conv).all() == True:
-                  if disp:
-                      print 'stop iter %.0f'%i
-                  # Trucation of parameter arrays
-                  mu_sem, pi_sem, sig_sem = mu_sem[:i+1,:], pi_sem[:i+1,:,:], sig_sem[:i+1]
-
-                  if mono==False:
-                      A_sem, rho1_sem,rho2_sem  = A_sem[:i+1,:,:],rho1_sem[:i+1],rho2_sem[:i+1]
-                  else:
-                      sig_sem = sig_sem[:i+1]
-                  break
+        if (ecart_tous[i-taille_fen,:]<seuil_conv).all() == True:
+              if disp:
+                  print 'stop iter %.0f'%i
+              # Trucation of parameter arrays
+              mu_sem, pi_sem, sig_sem = mu_sem[:i+1,:], pi_sem[:i+1,:,:], sig_sem[:i+1]
+        
+              sig_sem = sig_sem[:i+1]
+              break
 
     #==============================================================================
     #   Stockage des parametres
     #==============================================================================
     parchamp.mu_sem, parchamp.sig_sem, parchamp.pi_sem = mu_sem, sig_sem, pi_sem
-    
-    if mono == False:
-        parchamp.rho1_sem, parchamp.rho2_sem, parchamp.A_sem = rho1_sem, rho2_sem, A_sem
-       
+
     #==============================================================================
     #   moyenne des derniers parametres
     #==============================================================================
@@ -202,14 +173,7 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     parchamp.alpha = alpha_sem[-taille_fen:-1].mean()
     parchamp.alpha_v = alpha_v_sem[-taille_fen:-1].mean()
     parchamp.pi = pi_sem[-taille_fen:-1,:,:].mean(axis=0)
-    
-    if mono ==False:
-        parchamp.rho_1 = rho1_sem[-taille_fen:-1].mean()
-        parchamp.rho_2 = rho2_sem[-taille_fen:-1].mean()
-    
-        parchamp.A = A_sem[-taille_fen:-1,:,:].mean(axis=0)
 
-     
     return parchamp
     
 def est_param_noise(X,Y,parchamp,x_range):
@@ -227,87 +191,33 @@ def est_param_noise(X,Y,parchamp,x_range):
 
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
-    W = Y.shape[2]
-    weights = parchamp.weights
-    weights_1d =weights.reshape(Y.shape[0]* Y.shape[1])
-    # mono versus multi-band
-    if W == 1:
-        mono = True
-    else:
-        mono=False
-
-    if mono==False:
-#        liste_vec = np.reshape(Y,(Y.shape[0]*Y.shape[1],W))
-        nanmap = np.isnan(Y).any(axis=2)
-        msk = (nanmap).reshape(Y.shape[0]*Y.shape[1])  
-    else:
-        msk = np.isnan(Y).flatten()
 
 
-#==============================================================================
-#     Le cas particulier de l'astro
-#==============================================================================
+    nb_classe = x_range.size
+     
+    # compute the mean mu
+    mu = np.zeros(shape=(nb_classe,1))
+    for id_x in range(nb_classe):
+         mask = (X == x_range[id_x])
+         Y_manip = Y[:,:,0]
+         mu[id_x] = Y_manip[mask].mean()
+         # ajouter la possibilite d'avoir zero instance
     
-    if parchamp.multi==False and  mono==False: # 2 classes hyperspectral
-            # OK
+    # compute the STD sig
+    sig = np.zeros(shape=(nb_classe))
     
-            # moyenne spectrale
-            mu = np.zeros(shape=(1,W))
-            mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
-            
-            # maintenant on calcule sigma
-            mut = mu[0,:]
-            Y_manip = Y - X[:,:,np.newaxis] * mut[np.newaxis,np.newaxis,:] 
-            liste_vec = np.reshape(Y_manip,(Y.shape[0]*Y.shape[1],W))
-            Sigma = np.cov(liste_vec[(msk==0),:],rowvar=False, aweights=weights_1d)
-            
-            sig = np.sqrt(Sigma[np.eye(W)==1].mean())
-            rho_1= Sigma[ (np.eye(W,k=-1)+np.eye(W,k=1))==1].mean()
-            rho_2= Sigma[ (np.eye(W,k=-2)+np.eye(W,k=2))==1].mean()
- 
-        
-    elif parchamp.multi==True and mono==False: # multiple classes hyperspectral
-        # NEEDS UPDATE FOR STD
-        nb_classe = x_range.size
-        
-        # compute the mean mu
-        mu = np.zeros(shape=(W,nb_classe)) # attention forme differente ici que plus bas
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-             mu[:,id_x] = (mask[:,:,np.newaxis]*Y*weights[:,:,np.newaxis]).sum(axis=(0,1))/(mask*weights).sum()
+    nb_classe = x_range.size
+    for id_x in range(nb_classe):
+         mask = (X == x_range[id_x])
     
-    elif parchamp.multi==True and mono==True:   # mono bande multi classe   
+         Y_manip = Y[:,:,0] -  mu[id_x] * mask
     
-        nb_classe = x_range.size
-         
-        # compute the mean mu
-        mu = np.zeros(shape=(nb_classe,1))
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-             Y_manip = Y[:,:,0]
-             mu[id_x] = Y_manip[mask].mean()
-             # ajouter la possibilite d'avoir zero instance
-        
-        # compute the STD sig
-        sig = np.zeros(shape=(nb_classe))
-        
-        nb_classe = x_range.size
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-        
-             Y_manip = Y[:,:,0] -  mu[id_x] * mask
-        
-             sig[id_x] = np.std(Y_manip[mask].flatten())
+         sig[id_x] = np.std(Y_manip[mask].flatten())
                  
     # Retrieving
 
     parchamp.mu = mu
     parchamp.sig= sig     
-    
-    if mono==False:
-        parchamp.rho_1 = rho_1
-        parchamp.rho_2 = rho_2
-    
 
     return parchamp   
     
@@ -337,10 +247,9 @@ def est_pi(X,V,pargibbs):
         proba_empirique = (iseq.sum(axis=2)==a).mean()
         msk_a = (iseq.sum(axis=2)==a)
         if msk_a.sum()!=0:
-#            energie_config = energies_sum[msk_a]#/msk_a.sum()
-#            denom = np.exp(energies_sum[msk_a]).sum()/msk_a.sum() # proba moyenne de v_s|v_ns
+
             secondterme  = np.exp(-energies_sum[msk_a]).mean()
-#            denom = np.exp(-energies_sum).mean()
+
             pi_est[1,a] = proba_empirique * secondterme#/denom#np.exp(energie_config)
             
         else:
@@ -376,8 +285,6 @@ def est_pi(X,V,pargibbs):
         
         msk_a = (iseq.sum(axis=2)==a)
         if msk_a.sum()!=0:
-#            energie_config = energies_tous_sum[msk_a].sum()/msk_a.sum()
-#            denom = np.exp(energies_tous_sum[msk_a]).sum()/msk_a.sum()
             secondterme  = np.exp(-energies_tous_sum[msk_a]).mean()
             pi_est[0,a] = proba_empirique*secondterme#/denom#np.exp(energie_config)
             
@@ -412,7 +319,7 @@ def est_param_de_x(X):
     iseq = iseq[1:-1,1:-1,:]
     
     
-    #alpha_tous = np.zeros(9)+np.nan
+
     facteur = np.zeros(9)
     en = np.zeros(9)
             
@@ -439,8 +346,7 @@ def est_param_de_x(X):
     alpha_tous = a[(np.isnan(a)==0)*(np.isinf(a)==0)*(a!=0)]
     
     alpha = alpha_tous.mean()
-    
-#    alpha = max(alpha,0.5)
+
     return alpha  
 
 

@@ -4,22 +4,6 @@ lib package
 Submodules
 ----------
 
-lib\.SEM module
----------------
-
-.. automodule:: lib.SEM
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-lib\.est\_param\_gen module
----------------------------
-
-.. automodule:: lib.est_param_gen
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 lib\.fields\_tools module
 -------------------------
 
@@ -36,6 +20,22 @@ lib\.gibbs\_sampler module
     :undoc-members:
     :show-inheritance:
 
+lib\.mpm module
+---------------
+
+.. automodule:: lib.mpm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+lib\.parameter\_estimation module
+---------------------------------
+
+.. automodule:: lib.parameter_estimation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 lib\.parameters module
 ----------------------
 
@@ -44,10 +44,10 @@ lib\.parameters module
     :undoc-members:
     :show-inheritance:
 
-lib\.seg\_OTMF module
----------------------
+lib\.segmentation module
+------------------------
 
-.. automodule:: lib.seg_OTMF
+.. automodule:: lib.segmentation
     :members:
     :undoc-members:
     :show-inheritance:

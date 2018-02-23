@@ -48,9 +48,7 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
     pargibbs.nb_nn_v_help = 1 # param a supprimer
     pargibbs.v_help=v_help # useless? no !
     parchamp.multi = parseg.multi
-    parchamp.spec_snr = parseg.spec_snr
-    if parchamp.spec_snr:
-        parchamp.facteur=parseg.facteur
+    
     parchamp.weights = parseg.weights
     pargibbs.multi = parchamp.multi
     

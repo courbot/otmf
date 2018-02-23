@@ -1,5 +1,5 @@
-otmf-2.0-py2.7.egg
-==================
+otmf
+====
 
 .. toctree::
    :maxdepth: 4

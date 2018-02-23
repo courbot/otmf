@@ -1,0 +1,213 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>otmf.segmentation &#8212; OTMF 1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for otmf.segmentation</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">This module contains the image segmentation functions.</span>
+
+<span class="sd">:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr</span>
+<span class="sd">:date: Sep 01, 2017 (created Nov 03, 2015)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<span class="kn">from</span> <span class="nn">otmf.parameters</span> <span class="k">import</span> <span class="n">ParamsChamps</span>
+<span class="kn">from</span> <span class="nn">otmf.gibbs_sampler</span> <span class="k">import</span> <span class="n">gen_champs_fast</span>
+<span class="kn">from</span> <span class="nn">otmf.parameter_estimation</span> <span class="k">import</span> <span class="n">SEM</span>
+<span class="kn">import</span> <span class="nn">otmf.mpm</span> <span class="k">as</span> <span class="nn">mpm</span>
+
+
+ 
+<span class="c1">#%%</span>
+
+
+<div class="viewcode-block" id="seg_otmf"><a class="viewcode-back" href="../../otmf.html#otmf.segmentation.seg_otmf">[docs]</a><span class="k">def</span> <span class="nf">seg_otmf</span><span class="p">(</span><span class="n">parseg</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">superv</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">disp</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Segmentation of the image/ hyperspectral image.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    :param misc parseg: parameters ruling the segmentation method</span>
+<span class="sd">    :param misc pargibbs: parameters of the Gibbs sampling.</span>
+<span class="sd">    :param bool superv: set if the segmentation is supervized or not.</span>
+<span class="sd">    :param bool disp: trigger the verbose mode.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **X_est** *(ndarray)* X segmentation </span>
+<span class="sd">    :returns: **V_est** *(ndarray)* V segmentation </span>
+<span class="sd">    :returns: **X_mpm** *(ndarray)* Sequence of X Gibbs samples used for the MPM segmentation.</span>
+<span class="sd">    :returns: **V_mpm** *(ndarray)* Sequence of X Gibbs samples used for the MPM segmentation.</span>
+<span class="sd">    :returns: **parsem** *(parameter)* Parameters estimated with the SEM method.</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+
+    <span class="n">nb_iter_mpm</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">nb_iter_mpm</span>
+    <span class="n">nb_rea</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">nb_rea</span>
+<span class="c1">#    incert=parseg.incert</span>
+
+    <span class="n">parchamp</span> <span class="o">=</span> <span class="n">ParamsChamps</span><span class="p">()</span>
+    <span class="n">v_help</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">nb_nn_v_help</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># param a supprimer</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">v_help</span><span class="o">=</span><span class="n">v_help</span> <span class="c1"># useless? no !</span>
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">multi</span>
+    
+    <span class="n">parchamp</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">weights</span>
+    <span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">parchamp</span><span class="o">.</span><span class="n">multi</span>
+    
+    
+    <span class="c1"># A. Parameter retrieving    </span>
+    
+    <span class="k">if</span> <span class="n">superv</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">disp</span> <span class="p">:</span>
+            <span class="nb">print</span> <span class="s1">&#39;SEM ...&#39;</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Unsupervized parameter estimation with SEM</span>
+        <span class="n">parsem</span> <span class="o">=</span> <span class="n">SEM</span><span class="p">(</span><span class="n">parseg</span><span class="p">,</span><span class="n">parchamp</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">)</span> <span class="c1">#!!!</span>
+
+        <span class="n">nb_iter_effectif</span> <span class="o">=</span> <span class="n">parsem</span><span class="o">.</span><span class="n">sig_sem</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">disp</span><span class="p">:</span>
+            <span class="n">temps</span> <span class="o">=</span>  <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start</span><span class="p">)</span>
+            <span class="nb">print</span> <span class="s1">&#39;     </span><span class="si">%.0f</span><span class="s1"> x </span><span class="si">%.0f</span><span class="s1"> iterations et </span><span class="si">%.2f</span><span class="s1"> s - </span><span class="si">%.3f</span><span class="s1"> s/iter.&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">nb_iter_effectif</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">nb_iter</span><span class="p">,</span> <span class="n">temps</span><span class="p">,</span><span class="n">temps</span><span class="o">/</span><span class="n">nb_iter_effectif</span>  <span class="p">)</span>
+        <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span> <span class="o">=</span> <span class="n">parsem</span>
+        <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">parsem</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">real_par</span>
+        <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span> <span class="o">=</span> <span class="n">parsem</span>
+        <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">parchamp</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">T</span>
+
+
+    <span class="c1"># B. Segmentation </span>
+    <span class="k">if</span> <span class="n">parseg</span><span class="o">.</span><span class="n">mpm</span><span class="p">:</span>
+            <span class="c1"># B 1)  if the estimator is the MPM</span>
+            
+            <span class="n">pargibbs</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">nb_iter_mpm</span>
+        
+            <span class="k">if</span> <span class="n">disp</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s1">&#39;Serie Gibbs...&#39;</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">parseg</span><span class="o">.</span><span class="n">tmf</span> <span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+                <span class="n">pargibbs</span><span class="o">=</span><span class="n">mpm</span><span class="o">.</span><span class="n">serie_gibbs</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">nb_rea</span><span class="p">,</span><span class="n">generate_v</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">generate_x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_pi</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">tmf</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pargibbs</span><span class="o">.</span><span class="n">phi_theta_0</span> <span class="o">=</span><span class="mf">0.</span>
+                <span class="n">pargibbs</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">S0</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">S1</span><span class="p">))</span><span class="c1">#(pargibbs.X_res[:,:,-1])</span>
+                <span class="n">pargibbs</span><span class="o">=</span><span class="n">mpm</span><span class="o">.</span><span class="n">serie_gibbs</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">nb_rea</span><span class="p">,</span><span class="n">generate_v</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">generate_x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_pi</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span><span class="n">tmf</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">pargibbs</span><span class="o">.</span><span class="n">V_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">X_res</span><span class="p">)</span>
+        
+            
+            <span class="n">temps</span> <span class="o">=</span>  <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">-</span><span class="n">start</span><span class="p">)</span> 
+            <span class="k">if</span> <span class="n">disp</span><span class="p">:</span>
+                <span class="nb">print</span> <span class="s1">&#39;Serie simu : </span><span class="si">%.0f</span><span class="s1"> iterations et </span><span class="si">%.2f</span><span class="s1"> s - </span><span class="si">%.3f</span><span class="s1"> s/iter.&#39;</span><span class="o">%</span><span class="p">(</span><span class="n">nb_iter_mpm</span><span class="p">,</span> <span class="n">temps</span><span class="p">,</span><span class="n">temps</span><span class="o">/</span><span class="n">nb_iter_mpm</span>  <span class="p">)</span>    
+
+            <span class="n">X_mpm_est</span><span class="p">,</span><span class="n">V_mpm_est</span><span class="p">,</span><span class="n">X_mpm</span><span class="p">,</span><span class="n">V_mpm</span> <span class="o">=</span> <span class="n">mpm</span><span class="o">.</span><span class="n">MPM_uncert</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">parseg</span><span class="o">.</span><span class="n">tmf</span><span class="p">)</span>
+                
+            <span class="n">X_est</span><span class="p">,</span> <span class="n">V_est</span> <span class="o">=</span> <span class="n">X_mpm_est</span><span class="p">,</span> <span class="n">V_mpm_est</span>
+                
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># B 2) if the estimator is the MAP, we approach it by ICM</span>
+
+        <span class="k">if</span> <span class="n">parseg</span><span class="o">.</span><span class="n">tmf</span><span class="o">==</span><span class="kc">True</span><span class="p">:</span>
+            <span class="n">pargibbs</span> <span class="o">=</span> <span class="n">gen_champs_fast</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">generate_v</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">generate_x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">normal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">use_pi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">icm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pargibbs</span><span class="o">.</span><span class="n">phi_theta_0</span> <span class="o">=</span><span class="mf">0.</span>
+            <span class="n">pargibbs</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">S0</span><span class="p">,</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">S1</span><span class="p">))</span><span class="c1">#(pargibbs.X_res[:,:,-1])</span>
+            <span class="n">pargibbs</span><span class="o">=</span> <span class="n">gen_champs_fast</span><span class="p">(</span><span class="n">pargibbs</span><span class="p">,</span><span class="n">generate_v</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">generate_x</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">use_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">normal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">use_pi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">icm</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">pargibbs</span><span class="o">.</span><span class="n">V_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">pargibbs</span><span class="o">.</span><span class="n">X_res</span><span class="p">)</span>
+    
+        <span class="n">X_est</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">X_res</span><span class="p">[:,:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">V_est</span> <span class="o">=</span> <span class="n">pargibbs</span><span class="o">.</span><span class="n">V_res</span><span class="p">[:,:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="n">X_mpm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X_est</span><span class="p">)</span>
+        <span class="n">V_mpm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V_est</span><span class="p">)</span>
+
+  
+    <span class="k">return</span> <span class="n">X_est</span><span class="p">,</span> <span class="n">V_est</span><span class="p">,</span> <span class="n">X_mpm</span><span class="p">,</span><span class="n">V_mpm</span><span class="p">,</span> <span class="n">parsem</span></div>
+
+ 
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">OTMF 1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jean-Baptiste Courbot.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

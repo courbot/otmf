@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 This module contains all the functions related to parameter estimation.
-
 :author: Jean-Baptiste Courbot - jb.courbot@unistra.fr
 :date: Sep 01, 2017 (created Apr 20, 2016)
 """
@@ -13,7 +12,7 @@ import scipy.ndimage.morphology as morph
 from otmf.fields_tools import get_vals_voisins_tout,gen_beta
 #from otmf.seg_OTMF import serie_gibbs
 #from otmf.seg_OTMF import  MPM_uncert
-from otmf.gibbs_sampler import get_dir
+from otmf.gibbs_sampler import get_dir, gen_champs_fast
 
 from otmf import mpm as mpm
 
@@ -26,12 +25,10 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     
     See the original works from Celeux and Diebolt.
     
-
     :param parameters parseg: parameters ruling the segmentation method
     :param parameters parchamp: parameters of the model (priors, noise parameters)
     :param parameters pargibbs: parameters of the Gibbs sampling.
     :param bool disp: set the verbose mode [True]
-
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
     Y = pargibbs.Y
@@ -47,8 +44,7 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     # mono versus multi-band
     if W == 1:
         mono = True
-    else:
-        mono=False
+
     x_range=pargibbs.x_range
 
     #==============================================================================
@@ -94,38 +90,53 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
 
         pargibbs.parchamp = parchamp
 
-        if parseg.tmf==True:
+               
+# =============================================================================
+# STEP 1
+# Simulation of X ou (X,V) given the previous parameter.
+# =============================================================================
+        # First let us select if we use the OTMF model or the classical HMF.
+        if parseg.tmf==True: 
             
-            pargibbs.V = np.zeros_like(X_courant)
+            # For simulation one could use a single sample or a MPM estimate over
+            # several samples. The second choice brings robustness but takes 
+            # more computation times.
             
-            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
-            pargibbs.nb_iter = 100
+            pargibbs.V = np.zeros(shape=(Y.shape[0],Y.shape[1]))
+            
+#            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
+#            pargibbs.nb_iter = 100
             pargibbs=mpm.serie_gibbs(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem),generate_v=True,generate_x=True,use_y=True,use_pi=True,tmf=True)#(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem))
-            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+#            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
             
             X_courant, V_courant, d, d = mpm.MPM_uncert(pargibbs, tmf=False)
             
-            if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
-                X_courant = np.random.random(size=X_courant.shape) > 0.5
+            
+            
+#            parvx= gen_champs_fast(pargibbs,generate_v=True,generate_x=True,use_y=True,normal=False,use_pi=True)
+#            
+#            X_courant,V_courant = parvx.X_res[:,:,-1],parvx.V_res[:,:,-1]
+            
         else:
+            # For HMF we face a similar choice in terms of simulation.
+            # Here also the single sample estimation is commented out.
             
-            # a) Simulation given the previous parameter
-           
             pargibbs.V = np.zeros_like(X_courant)
-            
-            nb_iter_to_keep = np.copy(pargibbs.nb_iter)
-            pargibbs.nb_iter = 100
-            pargibbs=mpm.serie_gibbs(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem),generate_v=False,generate_x=True,use_y=True,use_pi=True,tmf=False)#(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem))
-            pargibbs.nb_iter = np.copy(nb_iter_to_keep)        
+
+            pargibbs=mpm.serie_gibbs(pargibbs,nb_rea=int(parseg.nb_iter_serie_sem),generate_v=False,generate_x=True,use_y=True,use_pi=True,tmf=False)      
             
             X_courant, d, d, d = mpm.MPM_uncert(pargibbs, tmf=False)
             
-   
+#            parvx= gen_champs_fast(pargibbs,generate_v=False,generate_x=True,use_y=True,normal=False,use_pi=True)
+#            X_courant= parvx.X_res[:,:,-1]
             
-            if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
-                X_courant = np.random.random(size=X_courant.shape) > 0.5
-
             V_courant = np.zeros_like(X_courant)
+        
+        # safeguard in the eventuality the simulation fails to generate a non-
+        # uniform image.
+        if (X_courant.sum() == 0) or ((1.-X_courant).sum()==0):
+            X_courant = np.random.random(size=X_courant.shape) > 0.5
+
 
         #==============================================================================
         #         # Estimation des parametres a partir de donnees completes
@@ -143,7 +154,7 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
             if np.isnan(a):
                 parchamp.alpha = 1.0
             else:
-                parchamp.alpha = a#est_param_de_x(X_courant,pargibbs)
+                parchamp.alpha = a
         else:
             parchamp.alpha = 1.0   
         
@@ -153,26 +164,14 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
         #         on stocke ces donnees
         #==============================================================================
 
-        # attention la forme du mu pourrait poser probleme en mono classe
-        #faire une option ici
-        
-                #ici   
         mu_sem[iter_sem,:,:], sig_sem[iter_sem,:], pi_sem[iter_sem,:,:], alpha_sem[iter_sem], alpha_v_sem[iter_sem]= parchamp.mu.T, parchamp.sig, parchamp.pi,parchamp.alpha,parchamp.alpha_v
-        
-        if mono==False:
-            rho1_sem[iter_sem], rho2_sem[iter_sem] = parchamp.rho_1, parchamp.rho_2
-            A_sem[i,:,:] = np.linalg.inv(gen_cov(W,parchamp.sig,parchamp.rho_1,parchamp.rho_2))
 
-        #==============================================================================
-        #       Decision to stop or continue
-        #==============================================================================
+#==============================================================================
+#       Decision to stop or continue SEM
+#==============================================================================
         if i > taille_fen:
-              if mono==False:
-                  ecart_tous[i-taille_fen,:] = mesure_ecart(A_sem[:i,:,:],A_sem[i,:,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
-              else:
-                          #ici   
-#                  print ecart_tous[i-taille_fen,:]#shape
-                  ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
+
+              ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
               
               if (ecart_tous[i-taille_fen,:]<seuil_conv).all() == True:
                   if disp:
@@ -180,23 +179,15 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
                   # Trucation of parameter arrays
                   mu_sem, pi_sem, sig_sem = mu_sem[:i+1,:], pi_sem[:i+1,:,:], sig_sem[:i+1]
 
-                  if mono==False:
-                      A_sem, rho1_sem,rho2_sem  = A_sem[:i+1,:,:],rho1_sem[:i+1],rho2_sem[:i+1]
-                  else:
-                      sig_sem = sig_sem[:i+1]
                   break
 
-    #==============================================================================
-    #   Stockage des parametres
-    #==============================================================================
+    
     parchamp.mu_sem, parchamp.sig_sem, parchamp.pi_sem = mu_sem, sig_sem, pi_sem
     
-    if mono == False:
-        parchamp.rho1_sem, parchamp.rho2_sem, parchamp.A_sem = rho1_sem, rho2_sem, A_sem
-       
-    #==============================================================================
-    #   moyenne des derniers parametres
-    #==============================================================================
+
+#==============================================================================
+#  Now we average the parameter over the latter iterations.
+#==============================================================================
     
     parchamp.mu = mu_sem[-taille_fen:-1,:,:].mean(axis=0)
     parchamp.sig = sig_sem[-taille_fen:-1,:].mean(axis=0)
@@ -204,12 +195,6 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     parchamp.alpha_v = alpha_v_sem[-taille_fen:-1].mean()
     parchamp.pi = pi_sem[-taille_fen:-1,:,:].mean(axis=0)
     
-    if mono ==False:
-        parchamp.rho_1 = rho1_sem[-taille_fen:-1].mean()
-        parchamp.rho_2 = rho2_sem[-taille_fen:-1].mean()
-    
-        parchamp.A = A_sem[-taille_fen:-1,:,:].mean(axis=0)
-
      
     return parchamp
     
@@ -220,12 +205,10 @@ def est_param_noise(X,Y,parchamp,x_range):
     The mean and variance estimators are based on standard pseudo 
     maximum-likelihood estimators.
     
-
     :param ndarray X: "hidden" classification
     :param ndarray Y: Hyperspectral observation, arranged in x, y, lambda.
     :param misc parchamp: parameters of the model (priors, noise parameters)
     :param ndarray x_range: possibles values for x
-
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
     W = Y.shape[2]
@@ -319,7 +302,6 @@ def est_pi(X,V,pargibbs):
     :param ndarray X: "hidden" classification
     :param ndarray V: "hidden" orientations
     :param misc pargibbs: parameters of the Gibbs sampling.
-
     :returns: **pi_est** *(ndarray)* - Estimated values of pi.
     """
     S0 = pargibbs.S0
@@ -403,8 +385,6 @@ def est_param_de_x(X):
     Estimation of the :math:`\\alpha` parameter from a realization :math:`X=x`.
     
     :param ndarray X: Values taken by :math:`x`
-
-
     :returns: **alpha** *(float)* - estimation of the :math:`\\alpha` parameter
     """
 
@@ -496,7 +476,6 @@ def mesure_ecart(A_tout,A, mu_tout,mu,pi_tout, pi,taille_fen,W):
     
     Since parameters are inhomogenous, gaps are normalized and computed 
     parameter-wise.
-
     Parameters
     ----------
     A_tous:ndarray
@@ -577,11 +556,8 @@ def est_kmeans(Y,x_range,multi=False):
 
 def init_params(pargibbs,parchamp):
     """ Initialize a parameter set
-
     :param misc pargibbs: parameters of the Gibbs sampling.
     :param misc parchamp: parameters of the model (priors, noise parameters)
-
-
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     :returns: **X_courant** *(ndarray)* - instance of X which the parameter are estimated
     """    
@@ -644,7 +620,6 @@ def gen_cov(W,sig,rho_1,rho_2):
     :param float sig: standard deviation
     :param float rho_1: correlation between two adjacent spectral bands.
     :param float rho_2: correlation between one band and the off-by-two neighbor band.
-
     :returns: **Sigma** *(ndarray)* - Covariance matrix
     """
     Sigma = np.eye(W)*sig**2 + (np.eye(W,k=1)+np.eye(W,k=-1)) * rho_1 + (np.eye(W,k=2)+np.eye(W,k=-2))*rho_2

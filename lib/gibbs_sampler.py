@@ -130,37 +130,13 @@ def calc_likelihood(Y, x_range, multi,par):
         num_x = x_range.size
         likelihood_y = np.ones(shape=(S0,S1,num_x))       
         parc = par.parchamp
-        if multi: # multiclasse
-            if W == 1:#monoband
-                #ici
-                for id_x in range(num_x):  
-
-                    likelihood_y[:,:,id_x] = st.norm.pdf(Y[:,:,0], loc=parc.mu[id_x],scale=parc.sig[id_x])
-            else:
-                
-                Sigma = np.eye(W) * parc.sig**2 + (np.eye(W,k=1) +  np.eye(W,k=-1)) * parc.rho_1 + (np.eye(W,k=2) +  np.eye(W,k=-2)) * parc.rho_2       
-                
-                for id_x in range(num_x):
-                    likelihood_y[:,:,id_x] = st.multivariate_normal.pdf(Y, mean=par.mu[:,id_x],cov=Sigma)        
-        else: # classes vs bruit
-            if W == 1:
-                for id_x in range(num_x):  
-                    likelihood_y[:,:,id_x] = st.norm.pdf(Y[:,:,0], loc=x_range[id_x]*parc.mu,scale=parc.sig)
-            else:
-                Sigma = np.eye(W) * parc.sig**2 + (np.eye(W,k=1) +  np.eye(W,k=-1)) * parc.rho_1 + (np.eye(W,k=2) +  np.eye(W,k=-2)) * parc.rho_2 
-           
-                if parc.mu.ndim==2:
-                    parc.mu = parc.mu[0,:]            
-                
-                for id_x in range(num_x):
-                    likelihood_y[:,:,id_x] = st.multivariate_normal.pdf(Y, mean=x_range[id_x]*parc.mu,cov=Sigma)   
-                    
-
-            likelihood_y[:,:,1:] = likelihood_y[:,:,1:] * parc.weights[:,:,np.newaxis]
-            
-            
-            likelihood_sum = likelihood_y.sum(axis=2)
-            likelihood_y /= likelihood_sum[:,:,np.newaxis]
+        
+        for id_x in range(num_x):  
+        
+            likelihood_y[:,:,id_x] = st.norm.pdf(Y[:,:,0], loc=parc.mu[id_x],scale=parc.sig[id_x])
+        
+        likelihood_sum = likelihood_y.sum(axis=2)
+        likelihood_y /= likelihood_sum[:,:,np.newaxis]
             
         return likelihood_y
 
@@ -189,9 +165,6 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
 
     alpha = par.alpha 
     alpha_v = par.alpha_v
-    beta = par.beta
-    delta = par.delta
-    phi_uni = par.phi_uni
 
     multi=par.multi
     parc = par.parchamp
@@ -341,7 +314,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                 probas = np.zeros(shape=(vois_tr.shape[0],vois_tr.shape[1],num_x))
                 if use_pi==False:
                     for id_x in range(num_x):                
-                        probas[:,:,id_x] = calc_proba_xyv(x_range[id_x],0, likelihood_y_tr, vals_tr_x,0, beta_tr, alpha,alpha_v,beta,vois_tr) # changer !
+                        probas[:,:,id_x] = calc_proba_xyv(x_range[id_x],0, likelihood_y_tr, vals_tr_x,0, beta_tr, alpha,alpha_v,vois_tr) # changer !
                 else: 
                     for id_x in range(num_x):  
                         probas[:,:,id_x] = calc_proba_xyv_pi(x_range,v_range,id_x,0, likelihood_y_tr,use_y, vals_tr_x,0, beta_tr, parc.pi, alpha,alpha_v,vois_tr)                            
@@ -391,7 +364,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                     Beta_tr = gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v_range[id_v])
 
                     if use_pi==False:
-                        probas[:,:,id_v] = calc_proba_xyv(0,v_range[id_v], likelihood_y_tr, 0,vals_tr_v, Beta_tr, alpha,alpha_v,beta,delta,phi_uni,vois_tr) 
+                        probas[:,:,id_v] = calc_proba_xyv(0,v_range[id_v], likelihood_y_tr, 0,vals_tr_v, Beta_tr, alpha,alpha_v,vois_tr) 
                     else:
                         probas[:,:,id_v] = calc_proba_xyv_pi(x_range,v_range,0,v_range[id_v], likelihood_y_tr,use_y, 0,vals_tr_v, Beta_tr, parc.pi,vois_tr)                     
                     
@@ -442,7 +415,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
                         Beta_tr = gen_beta(Vois[dq[0,q]::pas_q,dq[1,q]::pas_q,:],v)
                         
                         if use_pi==False:
-                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv(x_range[id_x],v_range[id_v], likelihood_y_tr, vals_tr_x,vals_tr_v, Beta_tr,  alpha, alpha_v,beta,vois_tr) 
+                            probas[:,:,id_x*num_v+id_v] = calc_proba_xyv(x_range[id_x],v_range[id_v], likelihood_y_tr, vals_tr_x,vals_tr_v, Beta_tr,  alpha, alpha_v,vois_tr) 
                         else:
                             probas[:,:,id_x*num_v+id_v] = calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr,  parc.pi,alpha,alpha_v,vois_tr) 
                                                            

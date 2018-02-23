@@ -4,22 +4,6 @@ otmf package
 Submodules
 ----------
 
-otmf\.SEM module
-----------------
-
-.. automodule:: otmf.SEM
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-otmf\.est\_param\_gen module
-----------------------------
-
-.. automodule:: otmf.est_param_gen
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 otmf\.fields\_tools module
 --------------------------
 
@@ -36,6 +20,22 @@ otmf\.gibbs\_sampler module
     :undoc-members:
     :show-inheritance:
 
+otmf\.mpm module
+----------------
+
+.. automodule:: otmf.mpm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+otmf\.parameter\_estimation module
+----------------------------------
+
+.. automodule:: otmf.parameter_estimation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 otmf\.parameters module
 -----------------------
 
@@ -44,10 +44,10 @@ otmf\.parameters module
     :undoc-members:
     :show-inheritance:
 
-otmf\.seg\_OTMF module
-----------------------
+otmf\.segmentation module
+-------------------------
 
-.. automodule:: otmf.seg_OTMF
+.. automodule:: otmf.segmentation
     :members:
     :undoc-members:
     :show-inheritance:

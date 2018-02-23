@@ -66,7 +66,7 @@
 
 <span class="sd">@author: courbot</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">otmf</span> <span class="k">import</span> <span class="n">fields_tools</span> <span class="k">as</span> <span class="n">ft</span>
+<span class="kn">from</span> <span class="nn">otmf.fields_tools</span> <span class="k">import</span> <span class="n">get_num_voisins</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <div class="viewcode-block" id="ParamsGibbs"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsGibbs">[docs]</a><span class="k">class</span> <span class="nc">ParamsGibbs</span><span class="p">():</span>
@@ -74,64 +74,34 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
                   <span class="n">S0</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
                   <span class="n">S1</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> 
-                  <span class="n">nb_iter</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-                  <span class="n">fuzzy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                  <span class="n">nb_fuzzy</span><span class="o">=</span><span class="mf">32.</span><span class="p">,</span>
-                  <span class="n">prop_fuzzy</span> <span class="o">=</span> <span class="mf">0.59</span><span class="p">,</span>
-                  <span class="n">anisotropic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">angle</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                  <span class="n">nb_iter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
                   <span class="n">v_range</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                   <span class="n">x_range</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
                   <span class="n">v_help</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                   <span class="n">nb_nn_v_help</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span>
-                  <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
                   <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
                   <span class="n">alpha_v</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
-                  <span class="n">beta</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                  <span class="n">delta</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                  <span class="n">phi_uni</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
-                  <span class="n">type_pot</span> <span class="o">=</span> <span class="s1">&#39;potts&#39;</span><span class="p">,</span>
-                  <span class="n">init_method</span> <span class="o">=</span> <span class="s1">&#39;std&#39;</span><span class="p">,</span>
-                  <span class="n">thr_conv</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
-                  <span class="n">autoconv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                  <span class="n">multi</span> <span class="o">=</span> <span class="kc">False</span>
-                      
+                  <span class="n">thr_conv</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>                     
                 <span class="p">):</span> 
 
         <span class="bp">self</span><span class="o">.</span><span class="n">S0</span> <span class="o">=</span> <span class="n">S0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">S1</span> <span class="o">=</span> <span class="n">S1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">nb_iter</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fuzzy</span> <span class="o">=</span> <span class="n">fuzzy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nb_fuzzy</span> <span class="o">=</span> <span class="n">nb_fuzzy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">prop_fuzzy</span> <span class="o">=</span> <span class="n">prop_fuzzy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">anisotropic</span><span class="o">=</span><span class="n">anisotropic</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">angle</span> <span class="o">=</span> <span class="n">angle</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">v_range</span> <span class="o">=</span> <span class="n">v_range</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">x_range</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_help</span> <span class="o">=</span> <span class="n">v_help</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nb_nn_v_help</span> <span class="o">=</span> <span class="n">nb_nn_v_help</span> 
-        <span class="bp">self</span><span class="o">.</span><span class="n">phi_theta_0</span> <span class="o">=</span> <span class="n">phi_theta_0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">alpha_v</span> <span class="o">=</span> <span class="n">alpha_v</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">phi_uni</span> <span class="o">=</span> <span class="n">phi_uni</span>
-        <span class="k">if</span> <span class="n">type_pot</span><span class="o">==</span><span class="s1">&#39;potts&#39;</span><span class="p">:</span>
-            <span class="n">phi_uni</span> <span class="o">=</span> <span class="mf">0.</span>
-            
-        <span class="bp">self</span><span class="o">.</span><span class="n">type_pot</span> <span class="o">=</span> <span class="n">type_pot</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">init_method</span> <span class="o">=</span> <span class="n">init_method</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">thr_conv</span> <span class="o">=</span> <span class="n">thr_conv</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">autoconv</span><span class="o">=</span><span class="n">autoconv</span>
         
         
         <span class="n">Vois</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="mi">8</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S0</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S1</span><span class="p">):</span>
-                <span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_num_voisins</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">)))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Vois</span> <span class="o">=</span> <span class="n">Vois</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">multi</span></div>
+                <span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">get_num_voisins</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vois</span> <span class="o">=</span> <span class="n">Vois</span></div>
+
         
         
 
@@ -158,12 +128,12 @@
 <div class="viewcode-block" id="ParamsSeg"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsSeg">[docs]</a><span class="k">class</span> <span class="nc">ParamsSeg</span><span class="p">():</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>   <span class="bp">self</span><span class="p">,</span>
-                    <span class="n">nb_iter_sem</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="c1"># nb d&#39;iter maximum pour SEM</span>
-                    <span class="n">nb_rea</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># nombre de realisations de Gibbs differentes pour le MPM</span>
-                    <span class="n">taille_fen</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="c1"># fenetre pour la convergence de SEM</span>
-                    <span class="n">seuil_conv</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="c1"># convergence de SEM</span>
-                    
-                    <span class="n">nb_iter_mpm</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># longueur max. pour les Gibbs dans le MPM</span>
+                    <span class="n">nb_iter_sem</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="c1"># Max. number of SEM iteration</span>
+                    <span class="n">nb_rea</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># number of Gibbs realizations within MPM</span>
+                    <span class="n">taille_fen</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="c1"># Window length for convergence evaluation in SEM</span>
+                    <span class="n">seuil_conv</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span> <span class="c1"># SEM convezrgence threshold</span>
+                    <span class="n">nb_iter_serie_sem</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span> <span class="c1"># nb of parallel sampling of &quot;MPM&quot; within SEM</span>
+                    <span class="n">nb_iter_mpm</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># max. number of Gibbs iterations within MPM</span>
                     <span class="n">pargibbs_nb_iter</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> 
                     <span class="n">pargibbs_autoconv</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="c1"># convergence automatique des estimateurs de Gibbs</span>
                     <span class="n">pargibbs_thr_conv</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span> <span class="c1"># seuil pour cette convergence, en relatif</span>

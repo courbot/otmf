@@ -44,12 +44,12 @@
   <ul>
 <li><a class="reference internal" href="#">otmf package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-otmf.SEM">otmf.SEM module</a></li>
-<li><a class="reference internal" href="#module-otmf.est_param_gen">otmf.est_param_gen module</a></li>
 <li><a class="reference internal" href="#module-otmf.fields_tools">otmf.fields_tools module</a></li>
 <li><a class="reference internal" href="#module-otmf.gibbs_sampler">otmf.gibbs_sampler module</a></li>
+<li><a class="reference internal" href="#module-otmf.mpm">otmf.mpm module</a></li>
+<li><a class="reference internal" href="#module-otmf.parameter_estimation">otmf.parameter_estimation module</a></li>
 <li><a class="reference internal" href="#module-otmf.parameters">otmf.parameters module</a></li>
-<li><a class="reference internal" href="#module-otmf.seg_OTMF">otmf.seg_OTMF module</a></li>
+<li><a class="reference internal" href="#module-otmf.segmentation">otmf.segmentation module</a></li>
 <li><a class="reference internal" href="#module-otmf">Module contents</a></li>
 </ul>
 </li>
@@ -84,191 +84,6 @@
 <h1>otmf package<a class="headerlink" href="#otmf-package" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
-</div>
-<div class="section" id="module-otmf.SEM">
-<span id="otmf-sem-module"></span><h2>otmf.SEM module<a class="headerlink" href="#module-otmf.SEM" title="Permalink to this headline">¶</a></h2>
-<p>This module contains all the functions related to parameter estimation.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a></td>
-</tr>
-<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Sep 01, 2017 (created Apr 20, 2016)</td>
-</tr>
-</tbody>
-</table>
-<dl class="function">
-<dt id="otmf.SEM.SEM">
-<code class="descclassname">otmf.SEM.</code><code class="descname">SEM</code><span class="sig-paren">(</span><em>parseg</em>, <em>parchamp</em>, <em>pargibbs</em>, <em>disp=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/SEM.html#SEM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.SEM.SEM" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stochastic Expectation-Maximization algorithm.</p>
-<p>This iterative method allows, at each iteration, a parameter re-estimation
-directly from complete data thanks to realization of the missing data,
-simulated using parameters estimated at the previous step.</p>
-<p>See the original works from Celeux and Diebolt.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>parseg</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters ruling the segmentation method</li>
-<li><strong>parchamp</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters of the model (priors, noise parameters)</li>
-<li><strong>pargibbs</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters of the Gibbs sampling.</li>
-<li><strong>disp</strong> (<em>bool</em>) – set the verbose mode [True]</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>parchamp</strong> <em>(parameter)</em> - set of estimated parameters</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.SEM.est_param_de_x">
-<code class="descclassname">otmf.SEM.</code><code class="descname">est_param_de_x</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/SEM.html#est_param_de_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.SEM.est_param_de_x" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimation of the <span class="math">\(\alpha\)</span> parameter from a realization <span class="math">\(X=x\)</span>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>ndarray</em>) – Values taken by <span class="math">\(x\)</span></td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>alpha</strong> <em>(float)</em> - estimation of the <span class="math">\(\alpha\)</span> parameter</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.SEM.est_param_noise">
-<code class="descclassname">otmf.SEM.</code><code class="descname">est_param_noise</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>parchamp</em>, <em>x_range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/SEM.html#est_param_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.SEM.est_param_noise" title="Permalink to this definition">¶</a></dt>
-<dd><p>Noise parameter estimation from complete data.</p>
-<p>The mean and variance estimators are based on standard pseudo
-maximum-likelihood estimators.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>X</strong> (<em>ndarray</em>) – “hidden” classification</li>
-<li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral observation, arranged in x, y, lambda.</li>
-<li><strong>parchamp</strong> (<em>misc</em>) – parameters of the model (priors, noise parameters)</li>
-<li><strong>x_range</strong> (<em>ndarray</em>) – possibles values for x</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>parchamp</strong> <em>(parameter)</em> - set of estimated parameters</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.SEM.est_pi">
-<code class="descclassname">otmf.SEM.</code><code class="descname">est_pi</code><span class="sig-paren">(</span><em>X</em>, <em>V</em>, <em>pargibbs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/SEM.html#est_pi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.SEM.est_pi" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimation of the prior parameter pi.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>X</strong> (<em>ndarray</em>) – “hidden” classification</li>
-<li><strong>V</strong> (<em>ndarray</em>) – “hidden” orientations</li>
-<li><strong>pargibbs</strong> (<em>misc</em>) – parameters of the Gibbs sampling.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>pi_est</strong> <em>(ndarray)</em> - Estimated values of pi.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</div>
-<div class="section" id="module-otmf.est_param_gen">
-<span id="otmf-est-param-gen-module"></span><h2>otmf.est_param_gen module<a class="headerlink" href="#module-otmf.est_param_gen" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="otmf.est_param_gen.est_kmeans">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">est_kmeans</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>multi=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#est_kmeans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.est_kmeans" title="Permalink to this definition">¶</a></dt>
-<dd><p>Simple routine for kmeans on HSI</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.est_param_gen.gen_cov">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">gen_cov</code><span class="sig-paren">(</span><em>W</em>, <em>sig</em>, <em>rho_1</em>, <em>rho_2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#gen_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.gen_cov" title="Permalink to this definition">¶</a></dt>
-<dd><p>bla</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.est_param_gen.get_parcov">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">get_parcov</code><span class="sig-paren">(</span><em>Sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#get_parcov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.get_parcov" title="Permalink to this definition">¶</a></dt>
-<dd><p>Estimate the three parameter ruling a penta-diagonal covariance matrix,
-with identical values along the diagonals.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Sigma</strong> (<em>ndarray</em>) – Covariance matrix</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
-<li><strong>sigma</strong> (<em>float</em>) – Estimated value of the scalar covariance.</li>
-<li><strong>rho1</strong> (<em>float</em>) – Estimated value of the 1-offset term.</li>
-<li><strong>rho2</strong> (<em>float</em>) – Estimated value of the 2-offset term.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.est_param_gen.init_params">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">init_params</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>parchamp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.init_params" title="Permalink to this definition">¶</a></dt>
-<dd><p>bla</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.est_param_gen.maj_parchamp">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">maj_parchamp</code><span class="sig-paren">(</span><em>parchamp</em>, <em>mu</em>, <em>sig</em>, <em>rho1</em>, <em>rho2</em>, <em>alpha</em>, <em>alpha_v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#maj_parchamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.maj_parchamp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set all values as fields of the parchamp class.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.est_param_gen.mesure_ecart">
-<code class="descclassname">otmf.est_param_gen.</code><code class="descname">mesure_ecart</code><span class="sig-paren">(</span><em>A_tout</em>, <em>A</em>, <em>mu_tout</em>, <em>mu</em>, <em>pi_tout</em>, <em>pi</em>, <em>taille_fen</em>, <em>W</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/est_param_gen.html#mesure_ecart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.est_param_gen.mesure_ecart" title="Permalink to this definition">¶</a></dt>
-<dd><p>Measures the gap between parameters and an average of a parameter serie.</p>
-<p>Since parameters are inhomogenous, gaps are normalized and computed
-parameter-wise.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>A_tous</strong> (<em>ndarray</em>) – Sequence of matrices.</li>
-<li><strong>A</strong> (<em>ndarray</em>) – Single matrix.</li>
-<li><strong>mu_tous</strong> (<em>ndarray</em>) – Sequence of vectors (mean parameter).</li>
-<li><strong>mu_tous</strong> – Single vector.</li>
-<li><strong>pi_tous</strong> (<em>ndarray</em>) – Sequence of vectors.</li>
-<li><strong>pi</strong> (<em>ndarray</em>) – Single vector.</li>
-<li><strong>taille_fen</strong> (<em>int</em>) – Window lenght in which the averaging is performed.</li>
-<li><strong>W</strong> (<em>ind</em>) – DEPRECATED.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>ecarts</strong> – 1D array containing relative gaps.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </div>
 <div class="section" id="module-otmf.fields_tools">
 <span id="otmf-fields-tools-module"></span><h2>otmf.fields_tools module<a class="headerlink" href="#module-otmf.fields_tools" title="Permalink to this headline">¶</a></h2>
@@ -436,17 +251,62 @@ and values of V (angle).</p>
 <dl class="function">
 <dt id="otmf.gibbs_sampler.calc_likelihood">
 <code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_likelihood</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>multi</em>, <em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_likelihood" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Compute the likelihood of Y given all possible classes and the noise parameters.</p>
+<p><strong>Note</strong> To be simplified.</p>
+<p>This function <strong>does not</strong> acount for the FSF.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral observation</li>
+<li><strong>x_range</strong> (<em>ndarray</em>) – set of possible x</li>
+<li><strong>multi</strong> (<em>bool</em>) – deprecated</li>
+<li><strong>par</strong> (<em>parameter</em>) – parameter set of the Gibbs sampling</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>likelihood_y</strong> <em>(ndarray)</em> Likelihood values, aranged in (x-dim,y-dim, number of classes).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="otmf.gibbs_sampler.calc_proba_xyv">
-<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_proba_xyv</code><span class="sig-paren">(</span><em>x_range</em>, <em>id_x</em>, <em>v</em>, <em>likelihood</em>, <em>vals</em>, <em>vals_v</em>, <em>Beta</em>, <em>fuzzy</em>, <em>nb_fuzzy</em>, <em>alpha</em>, <em>alpha_v</em>, <em>beta</em>, <em>delta</em>, <em>phi_uni</em>, <em>vois</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_proba_xyv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_proba_xyv" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_proba_xyv</code><span class="sig-paren">(</span><em>x_range</em>, <em>id_x</em>, <em>v</em>, <em>likelihood</em>, <em>vals</em>, <em>vals_v</em>, <em>Beta</em>, <em>alpha</em>, <em>alpha_v</em>, <em>vois</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_proba_xyv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_proba_xyv" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="function">
 <dt id="otmf.gibbs_sampler.calc_proba_xyv_pi">
-<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_proba_xyv_pi</code><span class="sig-paren">(</span><em>x_range</em>, <em>v_range</em>, <em>id_x</em>, <em>v</em>, <em>likelihood</em>, <em>use_y</em>, <em>vals</em>, <em>vals_v</em>, <em>Beta</em>, <em>fuzzy</em>, <em>nb_fuzzy</em>, <em>pi</em>, <em>alpha</em>, <em>alpha_v</em>, <em>delta</em>, <em>phi_uni</em>, <em>vois</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_proba_xyv_pi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_proba_xyv_pi" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_proba_xyv_pi</code><span class="sig-paren">(</span><em>x_range</em>, <em>v_range</em>, <em>id_x</em>, <em>v</em>, <em>likelihood</em>, <em>use_y</em>, <em>vals</em>, <em>vals_v</em>, <em>Beta</em>, <em>pi</em>, <em>alpha</em>, <em>alpha_v</em>, <em>vois</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_proba_xyv_pi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_proba_xyv_pi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute p(X, V|x_neighbor, v_neighbor, y)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x_range</strong> (<em>ndarray</em>) – possible values for x</li>
+<li><strong>v_range</strong> (<em>ndarray</em>) – possible values for v</li>
+<li><strong>id_x</strong> (<em>int</em>) – indice of x classe.</li>
+<li><strong>id_x</strong> – value of v.</li>
+<li><strong>likelihood</strong> (<em>ndarray</em>) – likelihood of x,v given y.</li>
+<li><strong>use_y</strong> (<em>bool</em>) – set if we use an observation y [True] or not [False]</li>
+<li><strong>vals</strong> (<em>ndarray</em>) – x neighbor values</li>
+<li><strong>vals_v</strong> (<em>ndarray</em>) – v neighbor values</li>
+<li><strong>pi</strong> (<em>ndarray</em>) – prior parameter.</li>
+<li><strong>phi</strong> (<em>ndarray</em>) – precomputed value of phi.</li>
+<li><strong>alpha</strong> (<em>ndarray</em>) – prior “granularity” parameter.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>proba_courant</strong> <em>(ndarray)</em> probability computation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="otmf.gibbs_sampler.cast_angles">
@@ -456,13 +316,27 @@ and values of V (angle).</p>
 <dl class="function">
 <dt id="otmf.gibbs_sampler.gen_champs_fast">
 <code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">gen_champs_fast</code><span class="sig-paren">(</span><em>par</em>, <em>generate_v</em>, <em>generate_x</em>, <em>use_y</em>, <em>normal=False</em>, <em>use_pi=True</em>, <em>icm=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#gen_champs_fast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.gen_champs_fast" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generation d’un champs de Gibbs a partir d’une initialisation
-angle en radians
-Situations prises en compte :
-X,V <a href="#id1"><span class="problematic" id="id2">|</span></a>Y
-X|Y V fixe
-V|Y X fixe</p>
-<p>icm specifie si l’on est en déterministe</p>
+<dd><p>Markov field simulation, either by Gibbs sampling or ICM.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>par</strong> (<em>parameter</em>) – parameter set of the Gibbs sampling</li>
+<li><strong>generate_v</strong> (<em>bool</em>) – set if we generate [True] or know [False] the V array (orientations).</li>
+<li><strong>generate_x</strong> (<em>bool</em>) – set if we generate [True] or know [False] the X array (classes).</li>
+<li><strong>use_y</strong> (<em>bool</em>) – set if we know [True] or ignore [False] an observation Y.</li>
+<li><strong>normal</strong> (<em>bool</em>) – set if we use the standard [True] or chromatic [False] Gibbs sampler.
+The second one is faster by several order of magnitude on large images.</li>
+<li><strong>icm</strong> (<em>bool</em>) – set if the realization is deterministic (ICM) or not (Gibbs).</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>par</strong> <em>(ParamsGibbs)</em> parameter containing the simulation output.</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -471,47 +345,13 @@ V|Y X fixe</p>
 <dd></dd></dl>
 
 </div>
-<div class="section" id="module-otmf.parameters">
-<span id="otmf-parameters-module"></span><h2>otmf.parameters module<a class="headerlink" href="#module-otmf.parameters" title="Permalink to this headline">¶</a></h2>
-<p>Created on Thu Jan 14 17:23:09 2016</p>
+<div class="section" id="module-otmf.mpm">
+<span id="otmf-mpm-module"></span><h2>otmf.mpm module<a class="headerlink" href="#module-otmf.mpm" title="Permalink to this headline">¶</a></h2>
+<p>Created on Thu Feb 22 16:15:53 2018</p>
 <p>&#64;author: courbot</p>
-<dl class="class">
-<dt id="otmf.parameters.ParamsChamps">
-<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsChamps</code><span class="sig-paren">(</span><em>alpha=1.0</em>, <em>phi_theta_0=0</em>, <em>mu=0</em>, <em>sig=0.25</em>, <em>rho=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsChamps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsChamps" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
-<dt id="otmf.parameters.ParamsGibbs">
-<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsGibbs</code><span class="sig-paren">(</span><em>S0=50</em>, <em>S1=50</em>, <em>nb_iter=50</em>, <em>fuzzy=False</em>, <em>nb_fuzzy=32.0</em>, <em>prop_fuzzy=0.59</em>, <em>anisotropic=False</em>, <em>angle=0</em>, <em>v_range=0</em>, <em>x_range=0</em>, <em>v_help=0</em>, <em>nb_nn_v_help=9</em>, <em>phi_theta_0=0.25</em>, <em>alpha=1.0</em>, <em>alpha_v=1.0</em>, <em>beta=1</em>, <em>delta=0</em>, <em>phi_uni=0.0</em>, <em>type_pot='potts'</em>, <em>init_method='std'</em>, <em>thr_conv=0.01</em>, <em>autoconv=True</em>, <em>multi=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsGibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsGibbs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="class">
-<dt id="otmf.parameters.ParamsSeg">
-<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsSeg</code><span class="sig-paren">(</span><em>nb_iter_sem=40</em>, <em>nb_rea=100</em>, <em>taille_fen=5</em>, <em>seuil_conv=0.05</em>, <em>nb_iter_mpm=100</em>, <em>pargibbs_nb_iter=100</em>, <em>pargibbs_autoconv=True</em>, <em>pargibbs_thr_conv=0.001</em>, <em>incert=True</em>, <em>pargibbs_Xi=0.0</em>, <em>tmf=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsSeg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsSeg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="function">
-<dt id="otmf.parameters.apply_parseg_pargibbs">
-<code class="descclassname">otmf.parameters.</code><code class="descname">apply_parseg_pargibbs</code><span class="sig-paren">(</span><em>parseg</em>, <em>pargibbs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#apply_parseg_pargibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.apply_parseg_pargibbs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</div>
-<div class="section" id="module-otmf.seg_OTMF">
-<span id="otmf-seg-otmf-module"></span><h2>otmf.seg_OTMF module<a class="headerlink" href="#module-otmf.seg_OTMF" title="Permalink to this headline">¶</a></h2>
-<p>This module contains the image segmentation functions.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a></td>
-</tr>
-<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Sep 01, 2017 (created Nov 03, 2015)</td>
-</tr>
-</tbody>
-</table>
-<dl class="function">
-<dt id="otmf.seg_OTMF.MPM_uncert">
-<code class="descclassname">otmf.seg_OTMF.</code><code class="descname">MPM_uncert</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>tmf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/seg_OTMF.html#MPM_uncert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.seg_OTMF.MPM_uncert" title="Permalink to this definition">¶</a></dt>
+<dt id="otmf.mpm.MPM_uncert">
+<code class="descclassname">otmf.mpm.</code><code class="descname">MPM_uncert</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>tmf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/mpm.html#MPM_uncert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.mpm.MPM_uncert" title="Permalink to this definition">¶</a></dt>
 <dd><p>MPM segmentation method. Used in parrallel processing here.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -541,8 +381,287 @@ Markov Field [False].</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="otmf.seg_OTMF.seg_otmf">
-<code class="descclassname">otmf.seg_OTMF.</code><code class="descname">seg_otmf</code><span class="sig-paren">(</span><em>parseg</em>, <em>pargibbs</em>, <em>superv=False</em>, <em>disp=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/seg_OTMF.html#seg_otmf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.seg_OTMF.seg_otmf" title="Permalink to this definition">¶</a></dt>
+<dt id="otmf.mpm.serie_gibbs">
+<code class="descclassname">otmf.mpm.</code><code class="descname">serie_gibbs</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>nb_rea</em>, <em>generate_v</em>, <em>generate_x</em>, <em>use_y</em>, <em>use_pi</em>, <em>tmf=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/mpm.html#serie_gibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.mpm.serie_gibbs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a serie of Gibbs sampling using the same parameters.</p>
+<blockquote>
+<div>This functions uses multiprocessing.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pargibbs</strong> (<em>misc</em>) – parameters of the Gibbs sampling.</li>
+<li><strong>nb_rea</strong> (<em>int</em>) – set how many independant sampling there will be.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>pargibbs</strong> <em>(parameter)</em> parameters containing the Gibbs samples.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-otmf.parameter_estimation">
+<span id="otmf-parameter-estimation-module"></span><h2>otmf.parameter_estimation module<a class="headerlink" href="#module-otmf.parameter_estimation" title="Permalink to this headline">¶</a></h2>
+<p>This module contains all the functions related to parameter estimation.
+:author: Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a>
+:date: Sep 01, 2017 (created Apr 20, 2016)</p>
+<dl class="function">
+<dt id="otmf.parameter_estimation.SEM">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">SEM</code><span class="sig-paren">(</span><em>parseg</em>, <em>parchamp</em>, <em>pargibbs</em>, <em>disp=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#SEM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.SEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stochastic Expectation-Maximization algorithm.</p>
+<p>This iterative method allows, at each iteration, a parameter re-estimation
+directly from complete data thanks to realization of the missing data,
+simulated using parameters estimated at the previous step.</p>
+<p>See the original works from Celeux and Diebolt.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>parseg</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters ruling the segmentation method</li>
+<li><strong>parchamp</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters of the model (priors, noise parameters)</li>
+<li><strong>pargibbs</strong> (<a class="reference internal" href="#module-otmf.parameters" title="otmf.parameters"><em>parameters</em></a>) – parameters of the Gibbs sampling.</li>
+<li><strong>disp</strong> (<em>bool</em>) – set the verbose mode [True]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>parchamp</strong> <em>(parameter)</em> - set of estimated parameters</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.est_kmeans">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_kmeans</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>multi=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_kmeans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_kmeans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple routine for running K-means clustering on an hyperspectral image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral image aranged as (spatial,spatial,spectral)</li>
+<li><strong>x_range</strong> (<em>ndarray</em>) – Classes (clusters) to recover.</li>
+<li><strong>multi</strong> (<em>bool</em>) – Set if we search for only 2 classes [False] or not [True].</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>X_km</strong> – Classification image.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.est_param_de_x">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_param_de_x</code><span class="sig-paren">(</span><em>X</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_param_de_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_param_de_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimation of the <span class="math">\(\alpha\)</span> parameter from a realization <span class="math">\(X=x\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>X</strong> (<em>ndarray</em>) – Values taken by <span class="math">\(x\)</span></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>alpha</strong> <em>(float)</em> - estimation of the <span class="math">\(\alpha\)</span> parameter</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.est_param_noise">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_param_noise</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>parchamp</em>, <em>x_range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_param_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_param_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Noise parameter estimation from complete data.</p>
+<p>The mean and variance estimators are based on standard pseudo
+maximum-likelihood estimators.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> (<em>ndarray</em>) – “hidden” classification</li>
+<li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral observation, arranged in x, y, lambda.</li>
+<li><strong>parchamp</strong> (<em>misc</em>) – parameters of the model (priors, noise parameters)</li>
+<li><strong>x_range</strong> (<em>ndarray</em>) – possibles values for x</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>parchamp</strong> <em>(parameter)</em> - set of estimated parameters</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.est_pi">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_pi</code><span class="sig-paren">(</span><em>X</em>, <em>V</em>, <em>pargibbs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_pi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_pi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimation of the prior parameter pi.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> (<em>ndarray</em>) – “hidden” classification</li>
+<li><strong>V</strong> (<em>ndarray</em>) – “hidden” orientations</li>
+<li><strong>pargibbs</strong> (<em>misc</em>) – parameters of the Gibbs sampling.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>pi_est</strong> <em>(ndarray)</em> - Estimated values of pi.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.gen_cov">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">gen_cov</code><span class="sig-paren">(</span><em>W</em>, <em>sig</em>, <em>rho_1</em>, <em>rho_2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#gen_cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.gen_cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a 5-band covariance matrix given the standard deviation +
+correlation parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>W</strong> (<em>int</em>) – spectral width of the covariance matrix to create.</li>
+<li><strong>sig</strong> (<em>float</em>) – standard deviation</li>
+<li><strong>rho_1</strong> (<em>float</em>) – correlation between two adjacent spectral bands.</li>
+<li><strong>rho_2</strong> (<em>float</em>) – correlation between one band and the off-by-two neighbor band.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>Sigma</strong> <em>(ndarray)</em> - Covariance matrix</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.get_parcov">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">get_parcov</code><span class="sig-paren">(</span><em>Sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#get_parcov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.get_parcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate the three parameter ruling a penta-diagonal covariance matrix,
+with identical values along the diagonals.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>Sigma</strong> (<em>ndarray</em>) – Covariance matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>sigma</strong> (<em>float</em>) – Estimated value of the scalar covariance.</li>
+<li><strong>rho1</strong> (<em>float</em>) – Estimated value of the 1-offset term.</li>
+<li><strong>rho2</strong> (<em>float</em>) – Estimated value of the 2-offset term.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.init_params">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">init_params</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>parchamp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#init_params"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.init_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a parameter set
+:param misc pargibbs: parameters of the Gibbs sampling.
+:param misc parchamp: parameters of the model (priors, noise parameters)
+:returns: <strong>parchamp</strong> <em>(parameter)</em> - set of estimated parameters
+:returns: <strong>X_courant</strong> <em>(ndarray)</em> - instance of X which the parameter are estimated</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.maj_parchamp">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">maj_parchamp</code><span class="sig-paren">(</span><em>parchamp</em>, <em>mu</em>, <em>sig</em>, <em>rho1</em>, <em>rho2</em>, <em>alpha</em>, <em>alpha_v</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#maj_parchamp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.maj_parchamp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set all values as fields of the parchamp class.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameter_estimation.mesure_ecart">
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">mesure_ecart</code><span class="sig-paren">(</span><em>A_tout</em>, <em>A</em>, <em>mu_tout</em>, <em>mu</em>, <em>pi_tout</em>, <em>pi</em>, <em>taille_fen</em>, <em>W</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#mesure_ecart"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.mesure_ecart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measures the gap between parameters and an average of a parameter serie.</p>
+<p>Since parameters are inhomogenous, gaps are normalized and computed
+parameter-wise.
+:param A_tous: Sequence of matrices.
+:type A_tous: ndarray
+:param A: Single matrix.
+:type A: ndarray
+:param mu_tous: Sequence of vectors (mean parameter).
+:type mu_tous: ndarray
+:param mu_tous: Single vector.
+:type mu_tous: ndarray
+:param pi_tous: Sequence of vectors.
+:type pi_tous: ndarray
+:param pi: Single vector.
+:type pi: ndarray
+:param taille_fen: Window lenght in which the averaging is performed.
+:type taille_fen: int
+:param W: DEPRECATED.
+:type W: ind</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>ecarts</strong> – 1D array containing relative gaps.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-otmf.parameters">
+<span id="otmf-parameters-module"></span><h2>otmf.parameters module<a class="headerlink" href="#module-otmf.parameters" title="Permalink to this headline">¶</a></h2>
+<p>Created on Thu Jan 14 17:23:09 2016</p>
+<p>&#64;author: courbot</p>
+<dl class="class">
+<dt id="otmf.parameters.ParamsChamps">
+<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsChamps</code><span class="sig-paren">(</span><em>alpha=1.0</em>, <em>phi_theta_0=0</em>, <em>mu=0</em>, <em>sig=0.25</em>, <em>rho=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsChamps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsChamps" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="otmf.parameters.ParamsGibbs">
+<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsGibbs</code><span class="sig-paren">(</span><em>S0=50</em>, <em>S1=50</em>, <em>nb_iter=100</em>, <em>v_range=0</em>, <em>x_range=0</em>, <em>v_help=0</em>, <em>nb_nn_v_help=9</em>, <em>alpha=1.0</em>, <em>alpha_v=1.0</em>, <em>thr_conv=0.01</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsGibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsGibbs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="otmf.parameters.ParamsSeg">
+<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsSeg</code><span class="sig-paren">(</span><em>nb_iter_sem=40</em>, <em>nb_rea=100</em>, <em>taille_fen=5</em>, <em>seuil_conv=0.05</em>, <em>nb_iter_serie_sem=12</em>, <em>nb_iter_mpm=100</em>, <em>pargibbs_nb_iter=100</em>, <em>pargibbs_autoconv=True</em>, <em>pargibbs_thr_conv=0.001</em>, <em>incert=True</em>, <em>pargibbs_Xi=0.0</em>, <em>tmf=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsSeg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsSeg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="otmf.parameters.apply_parseg_pargibbs">
+<code class="descclassname">otmf.parameters.</code><code class="descname">apply_parseg_pargibbs</code><span class="sig-paren">(</span><em>parseg</em>, <em>pargibbs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#apply_parseg_pargibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.apply_parseg_pargibbs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-otmf.segmentation">
+<span id="otmf-segmentation-module"></span><h2>otmf.segmentation module<a class="headerlink" href="#module-otmf.segmentation" title="Permalink to this headline">¶</a></h2>
+<p>This module contains the image segmentation functions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Sep 01, 2017 (created Nov 03, 2015)</td>
+</tr>
+</tbody>
+</table>
+<dl class="function">
+<dt id="otmf.segmentation.seg_otmf">
+<code class="descclassname">otmf.segmentation.</code><code class="descname">seg_otmf</code><span class="sig-paren">(</span><em>parseg</em>, <em>pargibbs</em>, <em>superv=False</em>, <em>disp=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/segmentation.html#seg_otmf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.segmentation.seg_otmf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Segmentation of the image/ hyperspectral image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -569,29 +688,6 @@ Markov Field [False].</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>parsem</strong> <em>(parameter)</em> Parameters estimated with the SEM method.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="otmf.seg_OTMF.serie_gibbs">
-<code class="descclassname">otmf.seg_OTMF.</code><code class="descname">serie_gibbs</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>nb_rea</em>, <em>generate_v</em>, <em>generate_x</em>, <em>use_y</em>, <em>use_pi</em>, <em>tmf=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/seg_OTMF.html#serie_gibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.seg_OTMF.serie_gibbs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate a serie of Gibbs sampling using the same parameters.</p>
-<blockquote>
-<div>This functions uses multiprocessing.</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pargibbs</strong> (<em>misc</em>) – parameters of the Gibbs sampling.</li>
-<li><strong>nb_rea</strong> (<em>int</em>) – set how many independant samplig there will be.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>pargibbs</strong> <em>(parameter)</em> parameters containing the Gibbs samples.</p>
 </td>
 </tr>
 </tbody>

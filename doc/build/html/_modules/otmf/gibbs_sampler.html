@@ -68,7 +68,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">st</span>
-<span class="kn">from</span> <span class="nn">otmf</span> <span class="k">import</span> <span class="n">fields_tools</span> <span class="k">as</span> <span class="n">ft</span>
+<span class="kn">from</span> <span class="nn">otmf.fields_tools</span> <span class="k">import</span> <span class="n">gen_beta</span><span class="p">,</span><span class="n">psi_ising</span><span class="p">,</span><span class="n">get_vals_voisins_tout</span><span class="p">,</span><span class="n">init_champs</span>
 <span class="kn">import</span> <span class="nn">gc</span>
 
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
@@ -114,19 +114,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>      
     
-<span class="c1">#    decal = v_range[0]/2.</span>
-<span class="c1">#    </span>
-<span class="c1">#    V_new = ((V+decal)-(V+decal)%(v_range[0]))%np.pi</span>
-    
-    
-<span class="c1">#    v_range_new = v_range[v_range!=0]</span>
-<span class="c1">#    for i in range(V.shape[0]):</span>
-<span class="c1">#        for j in range(V.shape[1]):</span>
-<span class="c1">#            if np.isnan(V[i,j])==0:</span>
-<span class="c1">#                ecart = np.abs(V[i,j] - v_range)%np.pi</span>
-<span class="c1">#                ind_min = np.argmin(ecart)</span>
-<span class="c1">#        </span>
-<span class="c1">#                V_new[i,j] =v_range[ind_min]   </span>
+
     <span class="k">return</span> <span class="n">V_new</span></div>
 
 <div class="viewcode-block" id="get_dir"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.get_dir">[docs]</a><span class="k">def</span> <span class="nf">get_dir</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
@@ -186,73 +174,60 @@
 
 
 <div class="viewcode-block" id="calc_likelihood"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_likelihood">[docs]</a><span class="k">def</span> <span class="nf">calc_likelihood</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Compute the likelihood of Y given all possible classes and the noise parameters.</span>
+<span class="sd">        </span>
+<span class="sd">        **Note** To be simplified.</span>
+<span class="sd">        </span>
+<span class="sd">        This function **does not** acount for the FSF.</span>
+<span class="sd">         </span>
+<span class="sd">        :param ndarray Y: Hyperspectral observation</span>
+<span class="sd">        :param ndarray x_range: set of possible x</span>
+<span class="sd">        :param bool multi: deprecated</span>
+<span class="sd">        :param parameter par: parameter set of the Gibbs sampling</span>
+<span class="sd">        </span>
+<span class="sd">        :returns: **likelihood_y** *(ndarray)* Likelihood values, aranged in (x-dim,y-dim, number of classes).  </span>
+<span class="sd">        &quot;&quot;&quot;</span>
     
         <span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">W</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">num_x</span> <span class="o">=</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span>
         <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">,</span><span class="n">num_x</span><span class="p">))</span>       
         <span class="n">parc</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parchamp</span>
-        <span class="k">if</span> <span class="n">multi</span><span class="p">:</span> <span class="c1"># multiclasse</span>
-            <span class="k">if</span> <span class="n">W</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span><span class="c1">#monoband</span>
-                <span class="c1">#ici</span>
-                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
-
-                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">scale</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">id_x</span><span class="p">])</span>
-            <span class="k">else</span><span class="p">:</span>
-                
-                <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_2</span>       
-                
-                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
-                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">mu</span><span class="p">[:,</span><span class="n">id_x</span><span class="p">],</span><span class="n">cov</span><span class="o">=</span><span class="n">Sigma</span><span class="p">)</span>        
-        <span class="k">else</span><span class="p">:</span> <span class="c1"># classes vs bruit</span>
-            <span class="k">if</span> <span class="n">W</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
-                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">*</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">)</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_1</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span>  <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">W</span><span class="p">,</span><span class="n">k</span><span class="o">=-</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">rho_2</span> 
-           
-                <span class="k">if</span> <span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="o">.</span><span class="n">ndim</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
-                    <span class="n">parc</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>            
-                
-                <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>
-                    <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">multivariate_normal</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">]</span><span class="o">*</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">,</span><span class="n">cov</span><span class="o">=</span><span class="n">Sigma</span><span class="p">)</span>   
-                    
-
-            <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="mi">1</span><span class="p">:]</span> <span class="o">*</span> <span class="n">parc</span><span class="o">.</span><span class="n">weights</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-            
-            
-            <span class="n">likelihood_sum</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-            <span class="n">likelihood_y</span> <span class="o">/=</span> <span class="n">likelihood_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
+        
+            <span class="n">likelihood_y</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">Y</span><span class="p">[:,:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">mu</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">scale</span><span class="o">=</span><span class="n">parc</span><span class="o">.</span><span class="n">sig</span><span class="p">[</span><span class="n">id_x</span><span class="p">])</span>
+        
+        <span class="n">likelihood_sum</span> <span class="o">=</span> <span class="n">likelihood_y</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">likelihood_y</span> <span class="o">/=</span> <span class="n">likelihood_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
             
         <span class="k">return</span> <span class="n">likelihood_y</span></div>
 
 
  
 <div class="viewcode-block" id="gen_champs_fast"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.gen_champs_fast">[docs]</a><span class="k">def</span> <span class="nf">gen_champs_fast</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">generate_v</span><span class="p">,</span> <span class="n">generate_x</span><span class="p">,</span> <span class="n">use_y</span><span class="p">,</span><span class="n">normal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">use_pi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">icm</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Generation d&#39;un champs de Gibbs a partir d&#39;une initialisation</span>
-<span class="sd">    angle en radians    </span>
-<span class="sd">    Situations prises en compte :</span>
-<span class="sd">    X,V |Y</span>
-<span class="sd">    X|Y V fixe</span>
-<span class="sd">    V|Y X fixe</span>
-<span class="sd">    </span>
-<span class="sd">    </span>
-<span class="sd">    icm specifie si l&#39;on est en déterministe</span>
-<span class="sd">    </span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Markov field simulation, either by Gibbs sampling or ICM.</span>
+
+
+<span class="sd">    :param parameter par: parameter set of the Gibbs sampling    </span>
+<span class="sd">    :param bool generate_v: set if we generate [True] or know [False] the V array (orientations).</span>
+<span class="sd">    :param bool generate_x: set if we generate [True] or know [False] the X array (classes).</span>
+<span class="sd">    :param bool use_y: set if we know [True] or ignore [False] an observation Y.</span>
+<span class="sd">    :param bool normal: set if we use the standard [True] or chromatic [False] Gibbs sampler.</span>
+<span class="sd">                        The second one is faster by several order of magnitude on large images.</span>
+<span class="sd">    :param bool icm: set if the realization is deterministic (ICM) or not (Gibbs).</span>
+
+<span class="sd">    :returns: **par** *(ParamsGibbs)* parameter containing the simulation output.</span>
+<span class="sd">     &quot;&quot;&quot;</span>
    
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">()</span> <span class="c1"># this is important if used in parrallel !!</span>
     
     <span class="n">S0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S0</span>
     <span class="n">S1</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S1</span>    
-    <span class="n">fuzzy</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">fuzzy</span>
-    <span class="n">nb_fuzzy</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">nb_fuzzy</span>
-<span class="c1">#    ran_fuzz = np.arange(0,nb_fuzzy+1)/nb_fuzzy</span>
+
+
     <span class="n">alpha</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha</span> 
     <span class="n">alpha_v</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha_v</span>
-    <span class="n">beta</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">beta</span>
-    <span class="n">delta</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">delta</span>
-    <span class="n">phi_uni</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">phi_uni</span>
-    <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">phi_theta_0</span> 
+
     <span class="n">multi</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">multi</span>
     <span class="n">parc</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parchamp</span>
     
@@ -268,7 +243,7 @@
         <span class="n">x_range</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">x_range</span>
         <span class="n">num_x</span> <span class="o">=</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;X_init&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-            <span class="n">X_init</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">init_champs</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>   
+            <span class="n">X_init</span> <span class="o">=</span> <span class="n">init_champs</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>   
         <span class="k">else</span><span class="p">:</span>
             <span class="n">X_init</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">X_init</span>
             
@@ -284,14 +259,12 @@
             <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">S0</span><span class="p">,</span><span class="n">S1</span><span class="p">))</span>
 
     <span class="c1">####################################</span>
-    <span class="c1"># Auxiliarry field V :      </span>
+    <span class="c1"># Auxiliary field V :      </span>
     <span class="k">if</span> <span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">v_range</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">v_range</span>
         <span class="n">num_v</span> <span class="o">=</span> <span class="n">v_range</span><span class="o">.</span><span class="n">size</span>  
-        
 
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;V_init&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> <span class="c1"># Attention ici !!!</span>
-            
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">par</span><span class="p">,</span><span class="s1">&#39;V_init&#39;</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span> 
             <span class="k">if</span> <span class="n">generate_x</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span> <span class="c1">#U|X        </span>
                 <span class="n">V_init</span> <span class="o">=</span> <span class="n">get_dir</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -307,8 +280,7 @@
         <span class="n">V</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">V</span>
 
     <span class="c1">################################### </span>
-    <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
-
+    <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># if there is an observation, we compute the likelihood</span>
         <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">calc_likelihood</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
  
 
@@ -316,10 +288,12 @@
     <span class="c1"># To speed up the gibbs sampler</span>
     <span class="c1"># defining quadrants</span>
     <span class="k">if</span> <span class="n">normal</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
-        <span class="c1"># parcours sur un graphe &quot;colore&quot;</span>
+        <span class="c1"># we are in the &quot;chromatic&quot; Gibbs sampler setting.</span>
     
 <span class="c1">#        dq =  np.array([[0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3],</span>
 <span class="c1">#                        [0,1,2,3,0,1,2,3,0,1,2,3,0,1,2,3]  ])</span>
+        <span class="c1"># above is an alternative choice for the grid (weak influence on the </span>
+        <span class="c1"># result)</span>
         <span class="n">dq</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>
                         <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
                         
@@ -350,7 +324,7 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S0</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">S1</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
-                     <span class="n">Beta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="c1"># il faudra en faire un qui gere les images</span>
+                     <span class="n">Beta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">=</span>  <span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">],</span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span> <span class="c1"># il faudra en faire un qui gere les images</span>
 
     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">nb_iter</span><span class="p">):</span>
         <span class="c1"># random permutations of the quadrant order :</span>
@@ -371,18 +345,18 @@
             
             <span class="c1"># retrieving appropriate X field (current, or fixed)</span>
             <span class="k">if</span> <span class="n">generate_x</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X_courant</span><span class="p">)</span>
+                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X_courant</span><span class="p">)</span>
                 
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+                <span class="n">vals_tout_x</span> <span class="o">=</span> <span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
             
             <span class="n">vals_tr_x</span> <span class="o">=</span> <span class="n">vals_tout_x</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span> <span class="c1"># this cannot be out of the &#39;for q&#39; loop !</span>
                 
             <span class="c1"># retrieving appropriate V field (current, or fixed)</span>
             <span class="k">if</span> <span class="n">generate_v</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V_courant</span><span class="p">)</span>
+                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V_courant</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+                <span class="n">vals_tout_v</span> <span class="o">=</span> <span class="n">get_vals_voisins_tout</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
             <span class="n">vals_tr_v</span> <span class="o">=</span> <span class="n">vals_tout_v</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:]</span> <span class="c1"># this cannot be out of the &#39;for q&#39; loop !</span>
             
             <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
@@ -402,10 +376,10 @@
                 <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois_tr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">num_x</span><span class="p">))</span>
                 <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
                     <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>                
-                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> <span class="c1"># changer !</span>
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> <span class="c1"># changer !</span>
                 <span class="k">else</span><span class="p">:</span> 
                     <span class="k">for</span> <span class="n">id_x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_x</span><span class="p">):</span>  
-                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span><span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                            
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="n">beta_tr</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                            
 
 
                 <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -449,12 +423,12 @@
                 <span class="c1"># enumerating different cases</span>
                 <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
 
-                    <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">])</span>
+                    <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">])</span>
 
                     <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
-                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                     
+                        <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span>                     
                     
                     
                 <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -500,13 +474,13 @@
                     <span class="k">for</span> <span class="n">id_v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_v</span><span class="p">):</span>
                         <span class="n">v</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">]</span>
                         
-                        <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v</span><span class="p">)</span>
+                        <span class="n">Beta_tr</span> <span class="o">=</span> <span class="n">gen_beta</span><span class="p">(</span><span class="n">Vois</span><span class="p">[</span><span class="n">dq</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,</span><span class="n">dq</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">q</span><span class="p">]::</span><span class="n">pas_q</span><span class="p">,:],</span><span class="n">v</span><span class="p">)</span>
                         
                         <span class="k">if</span> <span class="n">use_pi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
-                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span>  <span class="n">alpha</span><span class="p">,</span> <span class="n">alpha_v</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
                         <span class="k">else</span><span class="p">:</span>
-                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
-             
+                            <span class="n">probas</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="o">*</span><span class="n">num_v</span><span class="o">+</span><span class="n">id_v</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v_range</span><span class="p">[</span><span class="n">id_v</span><span class="p">],</span> <span class="n">likelihood_y_tr</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals_tr_x</span><span class="p">,</span><span class="n">vals_tr_v</span><span class="p">,</span> <span class="n">Beta_tr</span><span class="p">,</span>  <span class="n">parc</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois_tr</span><span class="p">)</span> 
+                                                           
                 <span class="n">probas_sum</span> <span class="o">=</span> <span class="n">probas</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
                 <span class="n">probas_norm</span> <span class="o">=</span> <span class="n">probas</span> <span class="o">/</span> <span class="n">probas_sum</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
                 
@@ -604,12 +578,12 @@
 
 
    
-<div class="viewcode-block" id="calc_proba_xyv"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">beta</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
+<div class="viewcode-block" id="calc_proba_xyv"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
     
     
-    <span class="n">energie_x</span> <span class="o">=</span> <span class="n">Beta</span> <span class="o">*</span> <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">energie_x</span> <span class="o">=</span> <span class="n">Beta</span> <span class="o">*</span> <span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="n">alpha</span><span class="p">)</span>
    
-    <span class="n">energie_v</span> <span class="o">=</span><span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">)</span>
+    <span class="n">energie_v</span> <span class="o">=</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">)</span>
     
     <span class="n">energie_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">likelihood</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">])</span> 
     
@@ -619,19 +593,29 @@
     <span class="k">return</span> <span class="n">proba_courant</span>      </div>
 
 
-<div class="viewcode-block" id="calc_proba_xyv_pi"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv_pi">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">fuzzy</span><span class="p">,</span><span class="n">nb_fuzzy</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">delta</span><span class="p">,</span><span class="n">phi_uni</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
-    
-    <span class="c1"># Dans l&#39;utilisation : calc_proba_xyv_pi(x_range,v_range,id_x,v_range[id_v], likelihood_y_tr,use_y, vals_tr_x,vals_tr_v, Beta_tr, fuzzy,nb_fuzzy, parc.pi,delta,phi_uni,vois_tr) </span>
-             
-    <span class="c1"># Ponderation par les &quot;fractions d&#39;abondance&quot; pi</span>
-    <span class="c1">## pour x</span>
-
-
+<div class="viewcode-block" id="calc_proba_xyv_pi"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_proba_xyv_pi">[docs]</a><span class="k">def</span> <span class="nf">calc_proba_xyv_pi</span><span class="p">(</span><span class="n">x_range</span><span class="p">,</span><span class="n">v_range</span><span class="p">,</span><span class="n">id_x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">likelihood</span><span class="p">,</span><span class="n">use_y</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span><span class="n">vals_v</span><span class="p">,</span> <span class="n">Beta</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">,</span><span class="n">vois</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Compute p(X, V|x_neighbor, v_neighbor, y)</span>
+<span class="sd">    </span>
+<span class="sd">    :param ndarray x_range: possible values for x</span>
+<span class="sd">    :param ndarray v_range: possible values for v</span>
+<span class="sd">    :param int id_x: indice of x classe.</span>
+<span class="sd">    :param int id_x: value of v.</span>
+<span class="sd">    :param ndarray likelihood: likelihood of x,v given y.</span>
+<span class="sd">    :param bool use_y: set if we use an observation y [True] or not [False]</span>
+<span class="sd">    :param ndarray vals: x neighbor values</span>
+<span class="sd">    :param ndarray vals_v: v neighbor values</span>
+<span class="sd">    :param ndarray pi: prior parameter.</span>
+<span class="sd">    :param ndarray phi: precomputed value of phi.</span>
+<span class="sd">    :param ndarray alpha: prior &quot;granularity&quot; parameter.</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **proba_courant** *(ndarray)* probability computation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
         
         
-        <span class="n">energie_x_sans_v</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span>                   <span class="c1"># ATTENTION ICI !!!</span>
+        <span class="n">energie_x_sans_v</span> <span class="o">=</span>  <span class="n">psi_ising</span><span class="p">(</span> <span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">],</span> <span class="n">vals</span><span class="p">,</span><span class="n">alpha</span><span class="p">)</span>
         
         <span class="n">pi_x_tous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
         <span class="n">config_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">vals</span><span class="o">==</span><span class="n">x_range</span><span class="p">[</span><span class="n">id_x</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -649,7 +633,7 @@
     <span class="c1">## pour v</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals_v</span><span class="p">,(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
         
-        <span class="n">energie_v</span> <span class="o">=</span>  <span class="n">ft</span><span class="o">.</span><span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="mf">1.</span><span class="p">)</span>                          <span class="c1"># ATTENTION ICI !!!</span>
+        <span class="n">energie_v</span> <span class="o">=</span>  <span class="n">psi_ising</span><span class="p">(</span> <span class="n">v</span><span class="p">,</span> <span class="n">vals_v</span><span class="p">,</span><span class="n">alpha_v</span><span class="p">)</span>
         
         <span class="n">pi_v_tous</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">vois</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
         <span class="n">config_v</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="o">==</span><span class="n">vals_v</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -657,13 +641,11 @@
             <span class="n">pi_v_tous</span><span class="p">[</span><span class="n">config_v</span><span class="o">==</span><span class="n">conf</span><span class="p">]</span> <span class="o">=</span> <span class="n">pi</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">conf</span><span class="p">]</span>
 
         
-        <span class="n">energie_v_sum</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi_v_tous</span><span class="p">)</span> <span class="o">-</span> <span class="n">energie_v</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="c1">#*8./facteurs#* (facteurs==8)</span>
-        
+        <span class="n">energie_v_sum</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">pi_v_tous</span><span class="p">)</span> <span class="o">-</span> <span class="n">energie_v</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">energie_v_sum</span> <span class="o">=</span> <span class="mi">0</span>
    
     <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span><span class="kc">True</span> <span class="p">:</span>    
-        
         <span class="n">energie_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">likelihood</span><span class="p">[:,:,</span><span class="n">id_x</span><span class="p">])</span> 
     <span class="k">else</span><span class="p">:</span>
         <span class="n">energie_y</span> <span class="o">=</span> <span class="mi">0</span>

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb  1 14:59:34 2016
+This module contains the Gibbs sampling tools.
 
-@author: courbot
+
+:author: Jean-Baptiste Courbot - www.jb-courbot.fr
+:date: Feb 23, 2018
 """
 import numpy as np
 import scipy.stats as st
@@ -14,16 +16,21 @@ from scipy.ndimage.filters import gaussian_filter
     
 
 def cast_angles(V,v_range):
+    """
+    Cast real angular values onto a discrete interval (nearest-neighbor).
+    
+    :param ndarray V: image containing real angular values.
+    :param ndarray v_range: set of values on which the casting is made.    
+    
+    :returns: **V_new** *(ndarray)* V image with recast values. 
+        
+    """
     
     V_new = np.zeros_like(V)
     
     
     decal = (v_range[1]-v_range[0])/2
-    
-    # il nous faut construire des intervalles sur 0,pi
-    #vmin = 0
-    #vmax = v_range[0]/2
-    #V_new[(vc>=vmin)*(vc<vmax)] = v_range[-1]
+
     V_new = np.zeros_like(V)
     for i in range(v_range.size):
         
@@ -32,22 +39,20 @@ def cast_angles(V,v_range):
         vmax = (v_range[i]+decal)
         Vcb = V%np.pi
         
-#        print vmin, vmax
+
         if vmin < 0 :
-            # intervalle supplementaire du cote de pi
             vmin_bis = vmin+np.pi
             vmax_bis = np.pi
             
             V_new[(Vcb>=vmin)*(Vcb<vmax)] = v_range[i]  
             V_new[(Vcb>=vmin_bis)*(Vcb<vmax_bis)] = v_range[i]  
-#            print vmin_bis, vmax_bis
+
         elif vmax > np.pi:
             vmin_bis = 0
             vmax_bis = vmax-np.pi
             
             V_new[(Vcb>=vmin)*(Vcb<vmax)] = v_range[i]  
             V_new[(Vcb>=vmin_bis)*(Vcb<vmax_bis)] = v_range[i]  
-#            print vmin_bis, vmax_bis
             
         else:
             V_new[(Vcb>=vmin)*(Vcb<vmax)] = v_range[i]      
@@ -56,19 +61,22 @@ def cast_angles(V,v_range):
     return V_new
 
 def get_dir(X,par):
+    """
+    Extract angular information from the contours in a binary image.
+     
+    :param ndarray X: image
+    :param pargibbs par: pargibbs parameter instance.    
+    
+    :returns: **an_interp** *(ndarray)* Estimated V image. 
+        
+    """ 
     
     S0 = par.S0
     S1 = par.S1
     v_range = par.v_range
 
-    if par.multi==False:
-#        X_fil = gaussian_filter(X.astype(float), sigma=(0.5,0.5))
-        X_fil = np.copy(X).astype(float)
-    else:
-#        if par.Y.shape[2]==1:
-#            X_fil = np.copy(par.Y[:,:,0])
-#        else:
-        X_fil =gaussian_filter(X.astype(float), sigma=(1,1))
+  
+    X_fil =gaussian_filter(X.astype(float), sigma=(1,1))
 #        X_fil = np.copy(X).astype(float)
         
     dx,dy = np.gradient(X_fil.astype('float'))
@@ -97,21 +105,19 @@ def get_dir(X,par):
     
     an_interp = it(list(np.ndindex(image.shape))).reshape(image.shape)
 
-    
-    # Interpolation fails outside of a convex hull. Misisng values are randomly filled.
+    # Interpolation fails outside of a convex hull. Missisng values are randomly filled.
     ani0 =an_interp[np.isnan(an_interp)]
     an_interp[np.isnan(an_interp)] = np.random.choice(v_range,size=ani0.size)
     
     ############## Recasting into the known range
     an_interp_fil = gaussian_filter(an_interp.astype(float), sigma=(2,2))
-    
-    
-    an_interp2 = cast_angles(an_interp_fil, v_range)
-    #
-    return an_interp2   
+
+    an_interp = cast_angles(an_interp_fil, v_range)
+
+    return an_interp  
 
 
-def calc_likelihood(Y, x_range, multi,par):
+def calc_likelihood(Y, x_range,par):
         """ Compute the likelihood of Y given all possible classes and the noise parameters.
         
         **Note** To be simplified.
@@ -120,7 +126,6 @@ def calc_likelihood(Y, x_range, multi,par):
          
         :param ndarray Y: Hyperspectral observation
         :param ndarray x_range: set of possible x
-        :param bool multi: deprecated
         :param parameter par: parameter set of the Gibbs sampling
         
         :returns: **likelihood_y** *(ndarray)* Likelihood values, aranged in (x-dim,y-dim, number of classes).  
@@ -166,7 +171,6 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
     alpha = par.alpha 
     alpha_v = par.alpha_v
 
-    multi=par.multi
     parc = par.parchamp
     
     # about convergence
@@ -219,7 +223,7 @@ def gen_champs_fast(par, generate_v, generate_x, use_y,normal=False,use_pi=True,
 
     ################################### 
     if use_y == True: # if there is an observation, we compute the likelihood
-        likelihood_y = calc_likelihood(par.Y, x_range, multi,par)
+        likelihood_y = calc_likelihood(par.Y, x_range, par)
  
 
     
@@ -537,15 +541,14 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     :param ndarray x_range: possible values for x
     :param ndarray v_range: possible values for v
     :param int id_x: indice of x classe.
-    :param int id_x: value of v.
+    :param int v: value of v.
     :param ndarray likelihood: likelihood of x,v given y.
     :param bool use_y: set if we use an observation y [True] or not [False]
     :param ndarray vals: x neighbor values
     :param ndarray vals_v: v neighbor values
     :param ndarray pi: prior parameter.
-    :param ndarray phi: precomputed value of phi.
-    :param ndarray alpha: prior "granularity" parameter.
-    
+    :param ndarray alpha: prior "granularity" parameter for X.
+    :param ndarray alpha_v: prior "granularity" parameter for V.
     
     :returns: **proba_courant** *(ndarray)* probability computation.
     """
@@ -553,7 +556,7 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     if isinstance(vals,(np.ndarray)):
         
         
-        energie_x_sans_v =  psi_ising( x_range[id_x], vals,alpha)
+        energie_x_sans_v =  psi_ising( x_range[id_x], vals,1)
         
         pi_x_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_x = (vals==x_range[id_x]).sum(axis=2)
@@ -571,7 +574,7 @@ def calc_proba_xyv_pi(x_range,v_range,id_x,v,likelihood,use_y, vals,vals_v, Beta
     ## pour v
     if isinstance(vals_v,(np.ndarray)):
         
-        energie_v =  psi_ising( v, vals_v,alpha_v)
+        energie_v =  psi_ising( v, vals_v,1)
         
         pi_v_tous = np.zeros(shape=(vois.shape[0],vois.shape[1]))
         config_v = (v==vals_v).sum(axis=2)

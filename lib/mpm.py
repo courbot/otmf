@@ -1,9 +1,11 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 22 16:15:53 2018
+This module contain the function running the MPM estimator only, because of
+inter-dependencies with the functions in segmentation.py and 
+parameter_estimation.py.
 
-@author: courbot
+:author: Jean-Baptiste Courbot - www.jb-courbot.fr
+:date: Feb 23, 2018
 """
 import numpy as np
 from otmf.gibbs_sampler import gen_champs_fast
@@ -118,7 +120,7 @@ def MPM_uncert(pargibbs,tmf):
         V_mpm_est = np.zeros_like(X_mpm_est)
         
  
-    
+    # Now we compute the uncertainty maps
     Ux_map = np.zeros_like(X_mpm_est)
     Uv_map = np.zeros_like(X_mpm_est)
 
@@ -135,13 +137,13 @@ def MPM_uncert(pargibbs,tmf):
     ratios_x = freqs_mpm_x[:,:,np.newaxis]/freqs_marg_x
     
     ineq_somme_x = (ratios_x < 1+Xi).sum(axis=2)
-    incert_map_x = ineq_somme_x > 1 # car il y a une valeur qui vaut 1 dans la somme
+    incert_map_x = ineq_somme_x > 1 # because the sum = 1+something
     X_mpm_est[incert_map_x] +=np.nan
     
     freqs_diff = freqs_mpm_x[:,:,np.newaxis]-freqs_marg_x
 
-    freqs_diff[freqs_diff==0] = 10000 #nombre plus grand que le min !
-    #freqs_diff[freqs_diff>10000] = 10001 # pour les inf
+    freqs_diff[freqs_diff==0] = 10000 #above min(freqs_diff)
+    
     
     if x_range.size==2:
         Ux_map = np.amin(freqs_diff,axis=2)  

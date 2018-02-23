@@ -3,8 +3,9 @@
 
 This module contains the image segmentation functions.
 
-:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr
-:date: Sep 01, 2017 (created Nov 03, 2015)
+
+:author: Jean-Baptiste Courbot - www.jb-courbot.fr
+:date: Feb 23, 2018
 """
 
 import numpy as np 
@@ -15,10 +16,6 @@ from otmf.parameters import ParamsChamps
 from otmf.gibbs_sampler import gen_champs_fast
 from otmf.parameter_estimation import SEM
 import otmf.mpm as mpm
-
-
- 
-#%%
 
 
 def seg_otmf(parseg,pargibbs,superv=False,disp=False):
@@ -47,12 +44,7 @@ def seg_otmf(parseg,pargibbs,superv=False,disp=False):
     v_help = True
     pargibbs.nb_nn_v_help = 1 # param a supprimer
     pargibbs.v_help=v_help # useless? no !
-    parchamp.multi = parseg.multi
-    
-    parchamp.weights = parseg.weights
-    pargibbs.multi = parchamp.multi
-    
-    
+
     # A. Parameter retrieving    
     
     if superv==False:

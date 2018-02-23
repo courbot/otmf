@@ -62,9 +62,11 @@
   <h1>Source code for otmf.gibbs_sampler</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Created on Mon Feb  1 14:59:34 2016</span>
+<span class="sd">This module contains the Gibbs sampling tools.</span>
 
-<span class="sd">@author: courbot</span>
+
+<span class="sd">:author: Jean-Baptiste Courbot - www.jb-courbot.fr</span>
+<span class="sd">:date: Feb 23, 2018</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">st</span>
@@ -76,16 +78,21 @@
     
 
 <div class="viewcode-block" id="cast_angles"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.cast_angles">[docs]</a><span class="k">def</span> <span class="nf">cast_angles</span><span class="p">(</span><span class="n">V</span><span class="p">,</span><span class="n">v_range</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cast real angular values onto a discrete interval (nearest-neighbor).</span>
+<span class="sd">    </span>
+<span class="sd">    :param ndarray V: image containing real angular values.</span>
+<span class="sd">    :param ndarray v_range: set of values on which the casting is made.    </span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **V_new** *(ndarray)* V image with recast values. </span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">V_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
     
     
     <span class="n">decal</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">v_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
-    
-    <span class="c1"># il nous faut construire des intervalles sur 0,pi</span>
-    <span class="c1">#vmin = 0</span>
-    <span class="c1">#vmax = v_range[0]/2</span>
-    <span class="c1">#V_new[(vc&gt;=vmin)*(vc&lt;vmax)] = v_range[-1]</span>
+
     <span class="n">V_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">v_range</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
         
@@ -94,22 +101,20 @@
         <span class="n">vmax</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">decal</span><span class="p">)</span>
         <span class="n">Vcb</span> <span class="o">=</span> <span class="n">V</span><span class="o">%</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
         
-<span class="c1">#        print vmin, vmax</span>
+
         <span class="k">if</span> <span class="n">vmin</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">:</span>
-            <span class="c1"># intervalle supplementaire du cote de pi</span>
             <span class="n">vmin_bis</span> <span class="o">=</span> <span class="n">vmin</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
             <span class="n">vmax_bis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
             
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin_bis</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax_bis</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
-<span class="c1">#            print vmin_bis, vmax_bis</span>
+
         <span class="k">elif</span> <span class="n">vmax</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">:</span>
             <span class="n">vmin_bis</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">vmax_bis</span> <span class="o">=</span> <span class="n">vmax</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
             
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin_bis</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax_bis</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  
-<span class="c1">#            print vmin_bis, vmax_bis</span>
             
         <span class="k">else</span><span class="p">:</span>
             <span class="n">V_new</span><span class="p">[(</span><span class="n">Vcb</span><span class="o">&gt;=</span><span class="n">vmin</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">Vcb</span><span class="o">&lt;</span><span class="n">vmax</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v_range</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>      
@@ -118,19 +123,22 @@
     <span class="k">return</span> <span class="n">V_new</span></div>
 
 <div class="viewcode-block" id="get_dir"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.get_dir">[docs]</a><span class="k">def</span> <span class="nf">get_dir</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract angular information from the contours in a binary image.</span>
+<span class="sd">     </span>
+<span class="sd">    :param ndarray X: image</span>
+<span class="sd">    :param pargibbs par: pargibbs parameter instance.    </span>
+<span class="sd">    </span>
+<span class="sd">    :returns: **an_interp** *(ndarray)* Estimated V image. </span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span> 
     
     <span class="n">S0</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S0</span>
     <span class="n">S1</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">S1</span>
     <span class="n">v_range</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">v_range</span>
 
-    <span class="k">if</span> <span class="n">par</span><span class="o">.</span><span class="n">multi</span><span class="o">==</span><span class="kc">False</span><span class="p">:</span>
-<span class="c1">#        X_fil = gaussian_filter(X.astype(float), sigma=(0.5,0.5))</span>
-        <span class="n">X_fil</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-<span class="c1">#        if par.Y.shape[2]==1:</span>
-<span class="c1">#            X_fil = np.copy(par.Y[:,:,0])</span>
-<span class="c1">#        else:</span>
-        <span class="n">X_fil</span> <span class="o">=</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+  
+    <span class="n">X_fil</span> <span class="o">=</span><span class="n">gaussian_filter</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
 <span class="c1">#        X_fil = np.copy(X).astype(float)</span>
         
     <span class="n">dx</span><span class="p">,</span><span class="n">dy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">X_fil</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">))</span>
@@ -159,21 +167,19 @@
     
     <span class="n">an_interp</span> <span class="o">=</span> <span class="n">it</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndindex</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
-    
-    <span class="c1"># Interpolation fails outside of a convex hull. Misisng values are randomly filled.</span>
+    <span class="c1"># Interpolation fails outside of a convex hull. Missisng values are randomly filled.</span>
     <span class="n">ani0</span> <span class="o">=</span><span class="n">an_interp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">an_interp</span><span class="p">)]</span>
     <span class="n">an_interp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">an_interp</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">v_range</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="n">ani0</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
     
     <span class="c1">############## Recasting into the known range</span>
     <span class="n">an_interp_fil</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">an_interp</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
-    
-    
-    <span class="n">an_interp2</span> <span class="o">=</span> <span class="n">cast_angles</span><span class="p">(</span><span class="n">an_interp_fil</span><span class="p">,</span> <span class="n">v_range</span><span class="p">)</span>
-    <span class="c1">#</span>
-    <span class="k">return</span> <span class="n">an_interp2</span>   </div>
+
+    <span class="n">an_interp</span> <span class="o">=</span> <span class="n">cast_angles</span><span class="p">(</span><span class="n">an_interp_fil</span><span class="p">,</span> <span class="n">v_range</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">an_interp</span>  </div>
 
 
-<div class="viewcode-block" id="calc_likelihood"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_likelihood">[docs]</a><span class="k">def</span> <span class="nf">calc_likelihood</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
+<div class="viewcode-block" id="calc_likelihood"><a class="viewcode-back" href="../../otmf.html#otmf.gibbs_sampler.calc_likelihood">[docs]</a><span class="k">def</span> <span class="nf">calc_likelihood</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span><span class="n">par</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Compute the likelihood of Y given all possible classes and the noise parameters.</span>
 <span class="sd">        </span>
 <span class="sd">        **Note** To be simplified.</span>
@@ -182,7 +188,6 @@
 <span class="sd">         </span>
 <span class="sd">        :param ndarray Y: Hyperspectral observation</span>
 <span class="sd">        :param ndarray x_range: set of possible x</span>
-<span class="sd">        :param bool multi: deprecated</span>
 <span class="sd">        :param parameter par: parameter set of the Gibbs sampling</span>
 <span class="sd">        </span>
 <span class="sd">        :returns: **likelihood_y** *(ndarray)* Likelihood values, aranged in (x-dim,y-dim, number of classes).  </span>
@@ -228,7 +233,6 @@
     <span class="n">alpha</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha</span> 
     <span class="n">alpha_v</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">alpha_v</span>
 
-    <span class="n">multi</span><span class="o">=</span><span class="n">par</span><span class="o">.</span><span class="n">multi</span>
     <span class="n">parc</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">parchamp</span>
     
     <span class="c1"># about convergence</span>
@@ -281,7 +285,7 @@
 
     <span class="c1">################################### </span>
     <span class="k">if</span> <span class="n">use_y</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># if there is an observation, we compute the likelihood</span>
-        <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">calc_likelihood</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">multi</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
+        <span class="n">likelihood_y</span> <span class="o">=</span> <span class="n">calc_likelihood</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">Y</span><span class="p">,</span> <span class="n">x_range</span><span class="p">,</span> <span class="n">par</span><span class="p">)</span>
  
 
     
@@ -599,15 +603,14 @@
 <span class="sd">    :param ndarray x_range: possible values for x</span>
 <span class="sd">    :param ndarray v_range: possible values for v</span>
 <span class="sd">    :param int id_x: indice of x classe.</span>
-<span class="sd">    :param int id_x: value of v.</span>
+<span class="sd">    :param int v: value of v.</span>
 <span class="sd">    :param ndarray likelihood: likelihood of x,v given y.</span>
 <span class="sd">    :param bool use_y: set if we use an observation y [True] or not [False]</span>
 <span class="sd">    :param ndarray vals: x neighbor values</span>
 <span class="sd">    :param ndarray vals_v: v neighbor values</span>
 <span class="sd">    :param ndarray pi: prior parameter.</span>
-<span class="sd">    :param ndarray phi: precomputed value of phi.</span>
-<span class="sd">    :param ndarray alpha: prior &quot;granularity&quot; parameter.</span>
-<span class="sd">    </span>
+<span class="sd">    :param ndarray alpha: prior &quot;granularity&quot; parameter for X.</span>
+<span class="sd">    :param ndarray alpha_v: prior &quot;granularity&quot; parameter for V.</span>
 <span class="sd">    </span>
 <span class="sd">    :returns: **proba_courant** *(ndarray)* probability computation.</span>
 <span class="sd">    &quot;&quot;&quot;</span>

@@ -62,14 +62,19 @@
   <h1>Source code for otmf.parameters</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Created on Thu Jan 14 17:23:09 2016</span>
+<span class="sd">This module contains parameter class definitions and misc utilities.</span>
 
-<span class="sd">@author: courbot</span>
+<span class="sd">:author: Jean-Baptiste Courbot - www.jb-courbot.fr</span>
+<span class="sd">:date: Feb 23, 2018</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">otmf.fields_tools</span> <span class="k">import</span> <span class="n">get_num_voisins</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <div class="viewcode-block" id="ParamsGibbs"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsGibbs">[docs]</a><span class="k">class</span> <span class="nc">ParamsGibbs</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructor for the class ParamsGibbs, containing parameters ruling the</span>
+<span class="sd">    Gibbs sampling.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
                   <span class="n">S0</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
@@ -107,7 +112,10 @@
 
         
 <div class="viewcode-block" id="ParamsChamps"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsChamps">[docs]</a><span class="k">class</span> <span class="nc">ParamsChamps</span><span class="p">():</span>
-
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructor for the class ParamsChamps, containing parameters ruling the</span>
+<span class="sd">    classification (noise parameters + priors).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
                   <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
                   <span class="n">phi_theta_0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -126,7 +134,10 @@
         <span class="c1"># define a parameters stack here?</span>
 
 <div class="viewcode-block" id="ParamsSeg"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.ParamsSeg">[docs]</a><span class="k">class</span> <span class="nc">ParamsSeg</span><span class="p">():</span>
-
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Constructor for the class ParamsSeg, containing parameters ruling the</span>
+<span class="sd">    segmentation procedure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>   <span class="bp">self</span><span class="p">,</span>
                     <span class="n">nb_iter_sem</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="c1"># Max. number of SEM iteration</span>
                     <span class="n">nb_rea</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="c1"># number of Gibbs realizations within MPM</span>
@@ -139,7 +150,9 @@
                     <span class="n">pargibbs_thr_conv</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span> <span class="c1"># seuil pour cette convergence, en relatif</span>
                     <span class="n">incert</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># Utilisation ou non de segmentation avec incertitude</span>
                     <span class="n">pargibbs_Xi</span> <span class="o">=</span> <span class="mf">0.</span> <span class="p">,</span>  <span class="c1"># valeur de l&#39;&quot;incertitude&quot; adoptee</span>
-                    <span class="n">tmf</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">tmf</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">use_pi</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="n">use_alpha</span><span class="o">=</span><span class="kc">True</span>
                 <span class="p">):</span> 
         
         <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter_sem</span><span class="o">=</span><span class="n">nb_iter_sem</span>
@@ -152,16 +165,21 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_autoconv</span><span class="o">=</span><span class="n">pargibbs_autoconv</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_thr_conv</span> <span class="o">=</span> <span class="n">pargibbs_thr_conv</span> <span class="c1"># seuil pour cette convergence, en relatif</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">incert</span> <span class="o">=</span> <span class="n">incert</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nb_iter_serie_sem</span> <span class="o">=</span> <span class="n">nb_iter_serie_sem</span> 
         <span class="bp">self</span><span class="o">.</span><span class="n">pargibbs_Xi</span> <span class="o">=</span> <span class="n">pargibbs_Xi</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tmf</span> <span class="o">=</span> <span class="n">tmf</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmf</span> <span class="o">=</span> <span class="n">tmf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_pi</span> <span class="o">=</span> <span class="n">use_pi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_alpha</span> <span class="o">=</span> <span class="n">use_alpha</span></div>
         
 <div class="viewcode-block" id="apply_parseg_pargibbs"><a class="viewcode-back" href="../../otmf.html#otmf.parameters.apply_parseg_pargibbs">[docs]</a><span class="k">def</span> <span class="nf">apply_parseg_pargibbs</span><span class="p">(</span><span class="n">parseg</span><span class="p">,</span><span class="n">pargibbs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transfer some fields of parseg to pargibbs classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     
     <span class="n">pargibbs</span><span class="o">.</span><span class="n">nb_iter</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_nb_iter</span>
     <span class="n">pargibbs</span><span class="o">.</span><span class="n">autoconv</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_autoconv</span>
     <span class="n">pargibbs</span><span class="o">.</span><span class="n">thr_conv</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_thr_conv</span>
     <span class="n">pargibbs</span><span class="o">.</span><span class="n">Xi</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">pargibbs_Xi</span>
-    <span class="n">pargibbs</span><span class="o">.</span><span class="n">multi</span> <span class="o">=</span> <span class="n">parseg</span><span class="o">.</span><span class="n">multi</span>
     
     <span class="k">return</span> <span class="n">pargibbs</span></div>
 </pre></div>

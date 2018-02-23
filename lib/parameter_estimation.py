@@ -32,18 +32,11 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
     Y = pargibbs.Y
-    W = pargibbs.W
-    if parseg.multi:
-        nb_classe = pargibbs.x_range.size
-    else:
-        nb_classe = 1 #useless?
+
+    nb_classe = pargibbs.x_range.size
         
     # recuperation parametres de segmentation
     nb_iter_sem, seuil_conv, taille_fen = parseg.nb_iter_sem, parseg.seuil_conv,parseg.taille_fen
-  
-    # mono versus multi-band
-    if W == 1:
-        mono = True
 
     x_range=pargibbs.x_range
 
@@ -54,15 +47,9 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
     alpha_sem = np.zeros(shape=(nb_iter_sem))
     alpha_v_sem = np.zeros(shape=(nb_iter_sem))
 
-    mu_sem = np.zeros(shape=(nb_iter_sem,W,nb_classe)) ;    
-    rho1_sem, rho2_sem = np.zeros(shape=(nb_iter_sem)), np.zeros(shape=(nb_iter_sem))
+    mu_sem = np.zeros(shape=(nb_iter_sem,1,nb_classe)) ;    
     pi_sem =  np.zeros(shape=(nb_iter_sem,2,9)) # deux champs, 9 types de config
-    
-    if mono==False:
-        A_sem = np.zeros(shape=(nb_iter_sem,W,W)) # ce sont les matrices de covariance
-    else:
-        A_sem = np.zeros(shape=(nb_iter_sem)) # ce sont des ecart-type
-        
+       
     # mesure des écarts entre paramètres
     ecart_tous =  np.zeros(shape=(nb_iter_sem-taille_fen,3))
     
@@ -171,7 +158,7 @@ def SEM(parseg,parchamp,pargibbs,disp=False):
 #==============================================================================
         if i > taille_fen:
 
-              ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,W)
+              ecart_tous[i-taille_fen,:] = mesure_ecart(sig_sem[:i,:],sig_sem[i,:], mu_sem[:i,:],mu_sem[i,:],pi_sem[:i,:,:],pi_sem[i,:,:],taille_fen,1)
               
               if (ecart_tous[i-taille_fen,:]<seuil_conv).all() == True:
                   if disp:
@@ -211,87 +198,31 @@ def est_param_noise(X,Y,parchamp,x_range):
     :param ndarray x_range: possibles values for x
     :returns: **parchamp** *(parameter)* - set of estimated parameters
     """
-    W = Y.shape[2]
-    weights = parchamp.weights
-    weights_1d =weights.reshape(Y.shape[0]* Y.shape[1])
-    # mono versus multi-band
-    if W == 1:
-        mono = True
-    else:
-        mono=False
-
-    if mono==False:
-#        liste_vec = np.reshape(Y,(Y.shape[0]*Y.shape[1],W))
-        nanmap = np.isnan(Y).any(axis=2)
-        msk = (nanmap).reshape(Y.shape[0]*Y.shape[1])  
-    else:
-        msk = np.isnan(Y).flatten()
-
-
-#==============================================================================
-#     Le cas particulier de l'astro
-#==============================================================================
+    nb_classe = x_range.size
+     
+    # compute the mean mu
+    mu = np.zeros(shape=(nb_classe,1))
+    for id_x in range(nb_classe):
+         mask = (X == x_range[id_x])
+         Y_manip = Y[:,:,0]
+         mu[id_x] = Y_manip[mask].mean()
+       
     
-    if parchamp.multi==False and  mono==False: # 2 classes hyperspectral
-            # OK
+    # compute the STD sig
+    sig = np.zeros(shape=(nb_classe))
     
-            # moyenne spectrale
-            mu = np.zeros(shape=(1,W))
-            mu[0,:] = (X[:,:,np.newaxis]*weights[:,:,np.newaxis]*Y).sum(axis=(0,1))/(X*weights).sum()
-            
-            # maintenant on calcule sigma
-            mut = mu[0,:]
-            Y_manip = Y - X[:,:,np.newaxis] * mut[np.newaxis,np.newaxis,:] 
-            liste_vec = np.reshape(Y_manip,(Y.shape[0]*Y.shape[1],W))
-            Sigma = np.cov(liste_vec[(msk==0),:],rowvar=False, aweights=weights_1d)
-            
-            sig = np.sqrt(Sigma[np.eye(W)==1].mean())
-            rho_1= Sigma[ (np.eye(W,k=-1)+np.eye(W,k=1))==1].mean()
-            rho_2= Sigma[ (np.eye(W,k=-2)+np.eye(W,k=2))==1].mean()
- 
-        
-    elif parchamp.multi==True and mono==False: # multiple classes hyperspectral
-        # NEEDS UPDATE FOR STD
-        nb_classe = x_range.size
-        
-        # compute the mean mu
-        mu = np.zeros(shape=(W,nb_classe)) # attention forme differente ici que plus bas
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-             mu[:,id_x] = (mask[:,:,np.newaxis]*Y*weights[:,:,np.newaxis]).sum(axis=(0,1))/(mask*weights).sum()
+    nb_classe = x_range.size
+    for id_x in range(nb_classe):
+         mask = (X == x_range[id_x])
     
-    elif parchamp.multi==True and mono==True:   # mono bande multi classe   
+         Y_manip = Y[:,:,0] -  mu[id_x] * mask
     
-        nb_classe = x_range.size
+         sig[id_x] = np.std(Y_manip[mask].flatten())
+           
          
-        # compute the mean mu
-        mu = np.zeros(shape=(nb_classe,1))
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-             Y_manip = Y[:,:,0]
-             mu[id_x] = Y_manip[mask].mean()
-             # ajouter la possibilite d'avoir zero instance
-        
-        # compute the STD sig
-        sig = np.zeros(shape=(nb_classe))
-        
-        nb_classe = x_range.size
-        for id_x in range(nb_classe):
-             mask = (X == x_range[id_x])
-        
-             Y_manip = Y[:,:,0] -  mu[id_x] * mask
-        
-             sig[id_x] = np.std(Y_manip[mask].flatten())
-                 
     # Retrieving
-
     parchamp.mu = mu
     parchamp.sig= sig     
-    
-    if mono==False:
-        parchamp.rho_1 = rho_1
-        parchamp.rho_2 = rho_2
-    
 
     return parchamp   
     
@@ -307,7 +238,7 @@ def est_pi(X,V,pargibbs):
     S0 = pargibbs.S0
     S1 = pargibbs.S1  
     
-    # Pour V déjà :
+    # Let us compute the values for V
     vals_vois = get_vals_voisins_tout(V)   
     iseq = (V[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
@@ -320,29 +251,19 @@ def est_pi(X,V,pargibbs):
         proba_empirique = (iseq.sum(axis=2)==a).mean()
         msk_a = (iseq.sum(axis=2)==a)
         if msk_a.sum()!=0:
-#            energie_config = energies_sum[msk_a]#/msk_a.sum()
-#            denom = np.exp(energies_sum[msk_a]).sum()/msk_a.sum() # proba moyenne de v_s|v_ns
             secondterme  = np.exp(-energies_sum[msk_a]).mean()
-#            denom = np.exp(-energies_sum).mean()
-            pi_est[1,a] = proba_empirique * secondterme#/denom#np.exp(energie_config)
+            pi_est[1,a] = proba_empirique * secondterme
             
         else:
             pi_est[1,a] = 0
     
-   
-    # Pour X maintenant :
-    if pargibbs.multi:
-       X_nn = np.copy(X)  # il faudra bien réfléchir à ce qu'on fait dans le cas d'un mélange...
-    else:
-       X_nn = (X>0) # carte de X non nul - toute les fractions de 1 sont vues comme 1
 
-    # A changer pour le multi-classe !!!
-       
-    vals_vois = get_vals_voisins_tout(X_nn)   
-    iseq = (X_nn[:,:,np.newaxis]== vals_vois)
+    # Values for X :       
+    vals_vois = get_vals_voisins_tout(X)   
+    iseq = (X[:,:,np.newaxis]== vals_vois)
     iseq = iseq[1:-1,1:-1,:]
 
-    # Ponderation des voisinages
+    # Neighbors weighting
     phi_theta = np.ones_like(pargibbs.Vois)    
     for i in xrange(S0):    
         for j in xrange(S1):
@@ -359,23 +280,21 @@ def est_pi(X,V,pargibbs):
         
         msk_a = (iseq.sum(axis=2)==a)
         if msk_a.sum()!=0:
-#            energie_config = energies_tous_sum[msk_a].sum()/msk_a.sum()
-#            denom = np.exp(energies_tous_sum[msk_a]).sum()/msk_a.sum()
             secondterme  = np.exp(-energies_tous_sum[msk_a]).mean()
-            pi_est[0,a] = proba_empirique*secondterme#/denom#np.exp(energie_config)
+            pi_est[0,a] = proba_empirique*secondterme
             
         else:
             pi_est[0,a] = 0
         
+    # Finally the values are normalized, disregrding the Nan values
     pi_est[0,:]/= pi_est[0,~np.isnan(pi_est[0,:])].sum()
     pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum()
     
-    # Etape de smoothing
+    # We also smooth out the values (little effects in most cases).
     pi_est[np.isnan(pi_est)+(pi_est==0)] = 0.01/(S0*S1)
     
     pi_est[0,:]/= pi_est[0,~np.isnan(pi_est[0,:])].sum()
-    pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum() # juste mais negligeable
-    
+    pi_est[1,:]/= pi_est[1,~np.isnan(pi_est[1,:])].sum() 
     return pi_est
   
 
@@ -420,8 +339,7 @@ def est_param_de_x(X):
     alpha_tous = a[(np.isnan(a)==0)*(np.isinf(a)==0)*(a!=0)]
     
     alpha = alpha_tous.mean()
-    
-#    alpha = max(alpha,0.5)
+
     return alpha  
 
 
@@ -516,7 +434,7 @@ def mesure_ecart(A_tout,A, mu_tout,mu,pi_tout, pi,taille_fen,W):
 
     return ecarts
        
-def est_kmeans(Y,x_range,multi=False):
+def est_kmeans(Y,x_range):
     """ 
     Simple routine for running K-means clustering on an hyperspectral image.
     
@@ -527,8 +445,7 @@ def est_kmeans(Y,x_range,multi=False):
         Hyperspectral image aranged as (spatial,spatial,spectral)
     x_range:ndarray
         Classes (clusters) to recover.
-    multi:bool
-        Set if we search for only 2 classes [False] or not [True].
+    
        
     Returns
     -------
@@ -548,9 +465,7 @@ def est_kmeans(Y,x_range,multi=False):
     X_km_flat[msk==0] = X_init_flat
     X_km_flat[msk==1] += np.nan
     X_km = X_km_flat.reshape((S0,S1))
-    if multi==False:
-        if (Y*(X_km[:,:,np.newaxis]==x_range[0])).mean() > (Y*(X_km[:,:,np.newaxis]==x_range[1])).mean():
-            X_km = 1 - X_km
+    
     X_km /= (x_range.size-1.)
     return X_km
 
@@ -564,40 +479,8 @@ def init_params(pargibbs,parchamp):
 
     Y = pargibbs.Y
     
+    X_courant = est_kmeans(Y,pargibbs.x_range)
 
-
-    if pargibbs.multi == True: # multiclasse
-        X_courant = est_kmeans(Y,pargibbs.x_range,pargibbs.multi)
-    else:
-        
-        X_courant = est_kmeans(Y,np.array([0,1]))
-        
-        if pargibbs.x_range.size>2:
-            # creation d'un X initial continu par morceau
-            
-            if pargibbs.multi==False:
-                x_range = pargibbs.x_range
-                X_courant = morph.binary_closing(X_courant,iterations = 1).astype(float)
-                pas = x_range[1]-x_range[0]
-                X_new = np.zeros_like(X_courant)
-                for id_x in range(x_range.size):
-                    if id_x ==0:
-                        xmax = x_range[id_x]+pas/2.
-                        X_new[X_courant < xmax] = x_range[id_x]
-                        
-                    elif id_x == x_range.size - 1:
-                        xmin = x_range[id_x]-pas/2.
-                        X_new[X_courant > xmin] = x_range[id_x]
-                    else:
-                        xmax = x_range[id_x]+pas/2.
-                        xmin = x_range[id_x]-pas/2.
-                        X_new[(X_courant > xmin)*(X_courant<xmax)] = x_range[id_x]
-        
-                X_courant = X_new
-                
-        else:
-            X_courant = gaussian_filter(X_courant.astype(float), sigma=(1.0,1.0)) > 0     
- 
     V_courant = get_dir(X_courant,pargibbs)
 
     parchamp = est_param_noise(X_courant,Y,parchamp,pargibbs.x_range)

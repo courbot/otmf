@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jan 14 17:23:09 2016
+This module contains parameter class definitions and misc utilities.
 
-@author: courbot
+:author: Jean-Baptiste Courbot - www.jb-courbot.fr
+:date: Feb 23, 2018
 """
 from otmf.fields_tools import get_num_voisins
 import numpy as np
 
 class ParamsGibbs():
+    """
+    Constructor for the class ParamsGibbs, containing parameters ruling the
+    Gibbs sampling.
+    """
 
     def __init__( self,
                   S0 = 50,
@@ -45,7 +50,10 @@ class ParamsGibbs():
 
         
 class ParamsChamps():
-
+    """
+    Constructor for the class ParamsChamps, containing parameters ruling the
+    classification (noise parameters + priors).
+    """
     def __init__( self,
                   alpha = 1.,
                   phi_theta_0 = 0,
@@ -64,7 +72,10 @@ class ParamsChamps():
         # define a parameters stack here?
 
 class ParamsSeg():
-
+    """
+    Constructor for the class ParamsSeg, containing parameters ruling the
+    segmentation procedure.
+    """
     def __init__(   self,
                     nb_iter_sem=40, # Max. number of SEM iteration
                     nb_rea = 100, # number of Gibbs realizations within MPM
@@ -77,7 +88,9 @@ class ParamsSeg():
                     pargibbs_thr_conv = 0.001, # seuil pour cette convergence, en relatif
                     incert = True, # Utilisation ou non de segmentation avec incertitude
                     pargibbs_Xi = 0. ,  # valeur de l'"incertitude" adoptee
-                    tmf = True
+                    tmf = True,
+                    use_pi = True,
+                    use_alpha=True
                 ): 
         
         self.nb_iter_sem=nb_iter_sem
@@ -90,15 +103,20 @@ class ParamsSeg():
         self.pargibbs_autoconv=pargibbs_autoconv
         self.pargibbs_thr_conv = pargibbs_thr_conv # seuil pour cette convergence, en relatif
         self.incert = incert
+        self.nb_iter_serie_sem = nb_iter_serie_sem 
         self.pargibbs_Xi = pargibbs_Xi
         self.tmf = tmf
+        self.use_pi = use_pi
+        self.use_alpha = use_alpha
         
 def apply_parseg_pargibbs(parseg,pargibbs):
+    """
+    Transfer some fields of parseg to pargibbs classes.
+    """
     
     pargibbs.nb_iter = parseg.pargibbs_nb_iter
     pargibbs.autoconv = parseg.pargibbs_autoconv
     pargibbs.thr_conv = parseg.pargibbs_thr_conv
     pargibbs.Xi = parseg.pargibbs_Xi
-    pargibbs.multi = parseg.multi
     
     return pargibbs

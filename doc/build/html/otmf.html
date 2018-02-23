@@ -87,14 +87,14 @@
 </div>
 <div class="section" id="module-otmf.fields_tools">
 <span id="otmf-fields-tools-module"></span><h2>otmf.fields_tools module<a class="headerlink" href="#module-otmf.fields_tools" title="Permalink to this headline">¶</a></h2>
-<p>Created on Mon Feb  1 09:23:11 2016</p>
+<p>This module contains various tools used within Markov modeling / segmentation.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a></td>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - www.jb-courbot.fr</td>
 </tr>
-<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Sep 01, 2017 (created Feb 01, 2016)</td>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Feb 23, 2018</td>
 </tr>
 </tbody>
 </table>
@@ -107,20 +107,13 @@ and values of V (angle).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>vois</strong> (<em>ndarray</em>) – stack of neighbor number</li>
-<li><strong>angle</strong> (<em>ndarray</em>) – <p>priviledged directions / values of V</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name" colspan="2">param ndarray beta:</th></tr>
-<tr class="field-odd field"><td>&#160;</td><td class="field-body">values generated in the lookuptable.</td>
-</tr>
-</tbody>
-</table>
-</li>
+<li><strong>angle</strong> (<em>ndarray</em>) – priviledged directions / values of V</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>beta</strong> <em>(ndarray)</em>: values generated in the lookuptable.</p>
 </td>
 </tr>
 </tbody>
@@ -211,10 +204,13 @@ and values of V (angle).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>a</strong> (<em>float</em>) – first parameter</li>
-<li><strong>b</strong> (<em>floas</em>) – second parameter</li>
+<li><strong>b</strong> (<em>float</em>) – second parameter</li>
 </ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><em>(float)</em>: abs(cos(a-b)).</p>
 </td>
 </tr>
 </tbody>
@@ -246,11 +242,20 @@ and values of V (angle).</p>
 </div>
 <div class="section" id="module-otmf.gibbs_sampler">
 <span id="otmf-gibbs-sampler-module"></span><h2>otmf.gibbs_sampler module<a class="headerlink" href="#module-otmf.gibbs_sampler" title="Permalink to this headline">¶</a></h2>
-<p>Created on Mon Feb  1 14:59:34 2016</p>
-<p>&#64;author: courbot</p>
+<p>This module contains the Gibbs sampling tools.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - www.jb-courbot.fr</td>
+</tr>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Feb 23, 2018</td>
+</tr>
+</tbody>
+</table>
 <dl class="function">
 <dt id="otmf.gibbs_sampler.calc_likelihood">
-<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_likelihood</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>multi</em>, <em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_likelihood" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">calc_likelihood</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#calc_likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.calc_likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the likelihood of Y given all possible classes and the noise parameters.</p>
 <p><strong>Note</strong> To be simplified.</p>
 <p>This function <strong>does not</strong> acount for the FSF.</p>
@@ -261,7 +266,6 @@ and values of V (angle).</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral observation</li>
 <li><strong>x_range</strong> (<em>ndarray</em>) – set of possible x</li>
-<li><strong>multi</strong> (<em>bool</em>) – deprecated</li>
 <li><strong>par</strong> (<em>parameter</em>) – parameter set of the Gibbs sampling</li>
 </ul>
 </td>
@@ -290,14 +294,14 @@ and values of V (angle).</p>
 <li><strong>x_range</strong> (<em>ndarray</em>) – possible values for x</li>
 <li><strong>v_range</strong> (<em>ndarray</em>) – possible values for v</li>
 <li><strong>id_x</strong> (<em>int</em>) – indice of x classe.</li>
-<li><strong>id_x</strong> – value of v.</li>
+<li><strong>v</strong> (<em>int</em>) – value of v.</li>
 <li><strong>likelihood</strong> (<em>ndarray</em>) – likelihood of x,v given y.</li>
 <li><strong>use_y</strong> (<em>bool</em>) – set if we use an observation y [True] or not [False]</li>
 <li><strong>vals</strong> (<em>ndarray</em>) – x neighbor values</li>
 <li><strong>vals_v</strong> (<em>ndarray</em>) – v neighbor values</li>
 <li><strong>pi</strong> (<em>ndarray</em>) – prior parameter.</li>
-<li><strong>phi</strong> (<em>ndarray</em>) – precomputed value of phi.</li>
-<li><strong>alpha</strong> (<em>ndarray</em>) – prior “granularity” parameter.</li>
+<li><strong>alpha</strong> (<em>ndarray</em>) – prior “granularity” parameter for X.</li>
+<li><strong>alpha_v</strong> (<em>ndarray</em>) – prior “granularity” parameter for V.</li>
 </ul>
 </td>
 </tr>
@@ -311,7 +315,23 @@ and values of V (angle).</p>
 <dl class="function">
 <dt id="otmf.gibbs_sampler.cast_angles">
 <code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">cast_angles</code><span class="sig-paren">(</span><em>V</em>, <em>v_range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#cast_angles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.cast_angles" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Cast real angular values onto a discrete interval (nearest-neighbor).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>V</strong> (<em>ndarray</em>) – image containing real angular values.</li>
+<li><strong>v_range</strong> (<em>ndarray</em>) – set of values on which the casting is made.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>V_new</strong> <em>(ndarray)</em> V image with recast values.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="otmf.gibbs_sampler.gen_champs_fast">
@@ -342,13 +362,40 @@ The second one is faster by several order of magnitude on large images.</li>
 <dl class="function">
 <dt id="otmf.gibbs_sampler.get_dir">
 <code class="descclassname">otmf.gibbs_sampler.</code><code class="descname">get_dir</code><span class="sig-paren">(</span><em>X</em>, <em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/gibbs_sampler.html#get_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.gibbs_sampler.get_dir" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Extract angular information from the contours in a binary image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> (<em>ndarray</em>) – image</li>
+<li><strong>par</strong> (<em>pargibbs</em>) – pargibbs parameter instance.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><strong>an_interp</strong> <em>(ndarray)</em> Estimated V image.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </div>
 <div class="section" id="module-otmf.mpm">
 <span id="otmf-mpm-module"></span><h2>otmf.mpm module<a class="headerlink" href="#module-otmf.mpm" title="Permalink to this headline">¶</a></h2>
-<p>Created on Thu Feb 22 16:15:53 2018</p>
-<p>&#64;author: courbot</p>
+<p>This module contain the function running the MPM estimator only, because of
+inter-dependencies with the functions in segmentation.py and
+parameter_estimation.py.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - www.jb-courbot.fr</td>
+</tr>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Feb 23, 2018</td>
+</tr>
+</tbody>
+</table>
 <dl class="function">
 <dt id="otmf.mpm.MPM_uncert">
 <code class="descclassname">otmf.mpm.</code><code class="descname">MPM_uncert</code><span class="sig-paren">(</span><em>pargibbs</em>, <em>tmf</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/mpm.html#MPM_uncert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.mpm.MPM_uncert" title="Permalink to this definition">¶</a></dt>
@@ -438,7 +485,7 @@ simulated using parameters estimated at the previous step.</p>
 
 <dl class="function">
 <dt id="otmf.parameter_estimation.est_kmeans">
-<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_kmeans</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em>, <em>multi=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_kmeans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_kmeans" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">otmf.parameter_estimation.</code><code class="descname">est_kmeans</code><span class="sig-paren">(</span><em>Y</em>, <em>x_range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameter_estimation.html#est_kmeans"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameter_estimation.est_kmeans" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simple routine for running K-means clustering on an hyperspectral image.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -447,7 +494,6 @@ simulated using parameters estimated at the previous step.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>Y</strong> (<em>ndarray</em>) – Hyperspectral image aranged as (spatial,spatial,spectral)</li>
 <li><strong>x_range</strong> (<em>ndarray</em>) – Classes (clusters) to recover.</li>
-<li><strong>multi</strong> (<em>bool</em>) – Set if we search for only 2 classes [False] or not [True].</li>
 </ul>
 </td>
 </tr>
@@ -623,27 +669,43 @@ parameter-wise.
 </div>
 <div class="section" id="module-otmf.parameters">
 <span id="otmf-parameters-module"></span><h2>otmf.parameters module<a class="headerlink" href="#module-otmf.parameters" title="Permalink to this headline">¶</a></h2>
-<p>Created on Thu Jan 14 17:23:09 2016</p>
-<p>&#64;author: courbot</p>
+<p>This module contains parameter class definitions and misc utilities.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - www.jb-courbot.fr</td>
+</tr>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Feb 23, 2018</td>
+</tr>
+</tbody>
+</table>
 <dl class="class">
 <dt id="otmf.parameters.ParamsChamps">
 <em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsChamps</code><span class="sig-paren">(</span><em>alpha=1.0</em>, <em>phi_theta_0=0</em>, <em>mu=0</em>, <em>sig=0.25</em>, <em>rho=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsChamps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsChamps" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Constructor for the class ParamsChamps, containing parameters ruling the
+classification (noise parameters + priors).</p>
+</dd></dl>
 
 <dl class="class">
 <dt id="otmf.parameters.ParamsGibbs">
 <em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsGibbs</code><span class="sig-paren">(</span><em>S0=50</em>, <em>S1=50</em>, <em>nb_iter=100</em>, <em>v_range=0</em>, <em>x_range=0</em>, <em>v_help=0</em>, <em>nb_nn_v_help=9</em>, <em>alpha=1.0</em>, <em>alpha_v=1.0</em>, <em>thr_conv=0.01</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsGibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsGibbs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Constructor for the class ParamsGibbs, containing parameters ruling the
+Gibbs sampling.</p>
+</dd></dl>
 
 <dl class="class">
 <dt id="otmf.parameters.ParamsSeg">
-<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsSeg</code><span class="sig-paren">(</span><em>nb_iter_sem=40</em>, <em>nb_rea=100</em>, <em>taille_fen=5</em>, <em>seuil_conv=0.05</em>, <em>nb_iter_serie_sem=12</em>, <em>nb_iter_mpm=100</em>, <em>pargibbs_nb_iter=100</em>, <em>pargibbs_autoconv=True</em>, <em>pargibbs_thr_conv=0.001</em>, <em>incert=True</em>, <em>pargibbs_Xi=0.0</em>, <em>tmf=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsSeg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsSeg" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property">class </em><code class="descclassname">otmf.parameters.</code><code class="descname">ParamsSeg</code><span class="sig-paren">(</span><em>nb_iter_sem=40</em>, <em>nb_rea=100</em>, <em>taille_fen=5</em>, <em>seuil_conv=0.05</em>, <em>nb_iter_serie_sem=12</em>, <em>nb_iter_mpm=100</em>, <em>pargibbs_nb_iter=100</em>, <em>pargibbs_autoconv=True</em>, <em>pargibbs_thr_conv=0.001</em>, <em>incert=True</em>, <em>pargibbs_Xi=0.0</em>, <em>tmf=True</em>, <em>use_pi=True</em>, <em>use_alpha=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#ParamsSeg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.ParamsSeg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor for the class ParamsSeg, containing parameters ruling the
+segmentation procedure.</p>
+</dd></dl>
 
 <dl class="function">
 <dt id="otmf.parameters.apply_parseg_pargibbs">
 <code class="descclassname">otmf.parameters.</code><code class="descname">apply_parseg_pargibbs</code><span class="sig-paren">(</span><em>parseg</em>, <em>pargibbs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/otmf/parameters.html#apply_parseg_pargibbs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#otmf.parameters.apply_parseg_pargibbs" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Transfer some fields of parseg to pargibbs classes.</p>
+</dd></dl>
 
 </div>
 <div class="section" id="module-otmf.segmentation">
@@ -653,9 +715,9 @@ parameter-wise.
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - <a class="reference external" href="mailto:jb&#46;courbot&#37;&#52;&#48;unistra&#46;fr">jb<span>&#46;</span>courbot<span>&#64;</span>unistra<span>&#46;</span>fr</a></td>
+<tr class="field-odd field"><th class="field-name">author:</th><td class="field-body">Jean-Baptiste Courbot - www.jb-courbot.fr</td>
 </tr>
-<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Sep 01, 2017 (created Nov 03, 2015)</td>
+<tr class="field-even field"><th class="field-name">date:</th><td class="field-body">Feb 23, 2018</td>
 </tr>
 </tbody>
 </table>
@@ -697,8 +759,7 @@ parameter-wise.
 </div>
 <div class="section" id="module-otmf">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-otmf" title="Permalink to this headline">¶</a></h2>
-<p>Created on Wed Jul 12 09:56:11 2017</p>
-<p>&#64;author: courbot</p>
+<p>Dumb initi file required for setup.py.</p>
 </div>
 </div>
 

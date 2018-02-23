@@ -60,12 +60,14 @@
           <div class="body" role="main">
             
   <h1>Source code for otmf.mpm</h1><div class="highlight"><pre>
-<span></span><span class="ch">#!/usr/bin/env python2</span>
-<span class="c1"># -*- coding: utf-8 -*-</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Created on Thu Feb 22 16:15:53 2018</span>
+<span class="sd">This module contain the function running the MPM estimator only, because of</span>
+<span class="sd">inter-dependencies with the functions in segmentation.py and </span>
+<span class="sd">parameter_estimation.py.</span>
 
-<span class="sd">@author: courbot</span>
+<span class="sd">:author: Jean-Baptiste Courbot - www.jb-courbot.fr</span>
+<span class="sd">:date: Feb 23, 2018</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">otmf.gibbs_sampler</span> <span class="k">import</span> <span class="n">gen_champs_fast</span>
@@ -180,7 +182,7 @@
         <span class="n">V_mpm_est</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X_mpm_est</span><span class="p">)</span>
         
  
-    
+    <span class="c1"># Now we compute the uncertainty maps</span>
     <span class="n">Ux_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X_mpm_est</span><span class="p">)</span>
     <span class="n">Uv_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">X_mpm_est</span><span class="p">)</span>
 
@@ -197,13 +199,13 @@
     <span class="n">ratios_x</span> <span class="o">=</span> <span class="n">freqs_mpm_x</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="o">/</span><span class="n">freqs_marg_x</span>
     
     <span class="n">ineq_somme_x</span> <span class="o">=</span> <span class="p">(</span><span class="n">ratios_x</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="o">+</span><span class="n">Xi</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">incert_map_x</span> <span class="o">=</span> <span class="n">ineq_somme_x</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="c1"># car il y a une valeur qui vaut 1 dans la somme</span>
+    <span class="n">incert_map_x</span> <span class="o">=</span> <span class="n">ineq_somme_x</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="c1"># because the sum = 1+something</span>
     <span class="n">X_mpm_est</span><span class="p">[</span><span class="n">incert_map_x</span><span class="p">]</span> <span class="o">+=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span>
     
     <span class="n">freqs_diff</span> <span class="o">=</span> <span class="n">freqs_mpm_x</span><span class="p">[:,:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span><span class="o">-</span><span class="n">freqs_marg_x</span>
 
-    <span class="n">freqs_diff</span><span class="p">[</span><span class="n">freqs_diff</span><span class="o">==</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span> <span class="c1">#nombre plus grand que le min !</span>
-    <span class="c1">#freqs_diff[freqs_diff&gt;10000] = 10001 # pour les inf</span>
+    <span class="n">freqs_diff</span><span class="p">[</span><span class="n">freqs_diff</span><span class="o">==</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span> <span class="c1">#above min(freqs_diff)</span>
+    
     
     <span class="k">if</span> <span class="n">x_range</span><span class="o">.</span><span class="n">size</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
         <span class="n">Ux_map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">freqs_diff</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  

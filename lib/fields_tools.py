@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb  1 09:23:11 2016
+This module contains various tools used within Markov modeling / segmentation.
 
-:author: Jean-Baptiste Courbot - jb.courbot@unistra.fr
-:date: Sep 01, 2017 (created Feb 01, 2016)
+:author: Jean-Baptiste Courbot - www.jb-courbot.fr
+:date: Feb 23, 2018
 """
 import numpy as np
 from numpy import cos
@@ -13,7 +13,9 @@ def phi_theta(a,b):
     Weighting function to account for orientation in Ising models.
     
     :param float a: first parameter
-    :param floas b: second parameter
+    :param float b: second parameter
+    
+    :returns:  *(float)*: abs(cos(a-b)).
     """
     
     return np.abs(cos(a-b))
@@ -26,7 +28,7 @@ def gen_beta(vois, angle):
     :param ndarray vois: stack of neighbor number
     :param ndarray angle: priviledged directions / values of V
     
-     :param ndarray beta: values generated in the lookuptable.
+    :returns: **beta** *(ndarray)*: values generated in the lookuptable.
         """
         
 #        The following numbering is used :

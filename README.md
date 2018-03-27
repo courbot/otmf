@@ -2,7 +2,9 @@ This is the README file associated to the repository github.com/courbot/otmf.
 
 Author : Jean-Baptiste Courbot
 
-Website: http://www.jb-courbot.fr/
+Website & contact informations: http://www.jb-courbot.fr/
+
+This code is a prototype. If something is unclear or if you spot a bug, feel free to contact me !
 
 **************************************
 LICENSE
@@ -33,7 +35,7 @@ Once installed, all package components are available using
 **************************************
 RUNNING
 
-Once the installation is made, a demontration jupyter notebook "demu.ipynb" is available.
+Once the installation is made, a demontration jupyter notebook "demo.ipynb" is available.
 This file should be self-explanatory with regards to the input parameters and the methods from the paper.
 
 **************************************
